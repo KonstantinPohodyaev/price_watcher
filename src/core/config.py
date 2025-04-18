@@ -9,6 +9,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     database_url: str = os.getenv('DATABASE_URL')
+    secret: str = os.getenv('SECRET')
 
 
 settings = Settings()

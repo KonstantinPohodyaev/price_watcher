@@ -27,10 +27,10 @@ class User(Base, SQLAlchemyBaseUserTableUUID):
         unique=True, nullable=True
     )
     name: Mapped[str | None] = mapped_column(
-        String(NAME_MAX_LENGTH)
+        String(NAME_MAX_LENGTH), nullable=True
     )
     surname: Mapped[str | None] = mapped_column(
-        String(SURNAME_MAX_LENGTH)
+        String(SURNAME_MAX_LENGTH), nullable=True
     )
     hashed_password: Mapped[str] = mapped_column(
         nullable=False
