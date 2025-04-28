@@ -48,7 +48,7 @@ class Track(Base):
         'User',
         back_populates='tracks',
         lazy='selectin',
-        secondary='usertrack',
+        secondary='user_track',
     )
     price_history: Mapped[list['PriceHistory']] = relationship(
         'PriceHistory',

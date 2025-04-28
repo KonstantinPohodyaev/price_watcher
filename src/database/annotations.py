@@ -16,7 +16,8 @@ created_at = Annotated[
     )
 ]
 updated_at = Annotated[
-    datetime, mapped_column(
+    datetime,
+    mapped_column(
         type_=TIMESTAMP(timezone=True),
         server_default=func.now(),
         onupdate=datetime.now
