@@ -65,4 +65,20 @@ def func_2():
     
     print(result)
 
-func_2()
+
+def dz():
+    for X1 in range(0, 2):
+        for X2 in range(0, 2):
+            for X3 in range(0, 2):
+                for X4 in range(0, 2):
+                    for X5 in range(0, 2):
+                        term1 = (not X1) and X2 and X3
+                        term2 = X2 and X3 and (not X4)
+                        term3 = (not X1) and X2 and (not X3) and X4
+                        term4 = X1 and (not X3) and (not X4) and X5
+                        term5 = (not X2) and X3 and X5
+                        
+                        print(X1, X2, X3, X4, X5, f'Y = {int(term1 or term2 or term3 or term4 or term5)}')
+
+
+dz()
