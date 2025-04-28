@@ -37,8 +37,7 @@ class User(Base, SQLAlchemyBaseUserTableUUID):
     )
     tracks: Mapped[list['Track']] = relationship(
         'Track',
-        secondary='usertrack',
         back_populates='users',
-        lazy='selectin',
-        cascade='all, delete-orphan'
+        secondary='user_track',
+        lazy='selectin'
     )

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase, declared_attr, Mapped
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
-from src.database.annotations import int_pk, created_at, updated_at
+from src.database.annotations import created_at, updated_at
 
 
 class Base(AsyncAttrs, DeclarativeBase):

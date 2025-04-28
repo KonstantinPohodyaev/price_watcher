@@ -9,18 +9,15 @@ class UserRead(schemas.BaseUser[int]):
     telegram_id: Optional[int]
     name: Optional[str]
     surname: Optional[str]
-    tracs: Optional[list[Track]]
 
 
 class UserCreate(schemas.BaseUserCreate):
     telegram_id: Optional[int]
     name: Optional[str]
     surname: Optional[str]
-    tracs: Optional[list[Track]]
 
 
 class UserUpdate(schemas.BaseUserUpdate):
     telegram_id: Optional[int]
     name: Optional[str]
     surname: Optional[str]
-    tracs: Optional[list[Track]]
