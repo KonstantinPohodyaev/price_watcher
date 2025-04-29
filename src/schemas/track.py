@@ -25,7 +25,6 @@ TRACK_UPDATE_TITLE = (
 
 class BaseTrack(BaseModel):
     """Базовая схема для модели PriceHistory."""
-    id: Optional[int]
     url: HttpUrl = Field(
         None,
         title=URL_TITLE,
@@ -46,9 +45,11 @@ class BaseTrack(BaseModel):
 
 class TrackDB(BaseTrack):
     """Схема для отображения PriceHistory в БД."""
+    id: Optional[int]
 
     class Config:
         title = TRACK_DB_TITLE
+        from_attributes = True
 
 
 class TrackCreate(BaseTrack):

@@ -120,7 +120,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 ),
             )
 
-    async def remove(
+    async def delete(
         self,
         db_object: ModelType,
         session: AsyncSession,
