@@ -1,16 +1,15 @@
 """Модуль с базовыми классами CRUD-операций."""
 
-from typing import Generic, TypeVar, Type, Optional
+from typing import Generic, Optional, Type, TypeVar
 
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.base import Base
-
 
 CREATE_ERROR_MESSAGE = (
     'Ошибка в данных для создания объекта! Текст ошибки: {error}'
@@ -109,7 +108,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=UPDATE_ERROR_MESSAGE.format(error_message=str(error)),
+                detail=UPDATE_ERROR_MESSAGE.format(error=str(error)),
             )
         except SQLAlchemyError as error:
             await session.rollback()

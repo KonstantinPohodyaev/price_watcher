@@ -1,11 +1,12 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.schemas.track import TrackDB, TrackCreate, TrackUpdate
+from src.api.v1.validators import check_track_exists_by_id
 from src.crud.track import track_crud
 from src.database.db import get_async_session
-from src.api.v1.validators import check_track_exists_by_id
-
+from src.database.enums import Marketplace
+from src.schemas.track import (TrackCreate, TrackDB, TrackFilterSchema,
+                               TrackUpdate)
 
 router = APIRouter()
 
@@ -16,10 +17,16 @@ router = APIRouter()
     response_model=list[TrackDB]
 )
 async def get_tracks(
+    is_active: bool = Query(None),
+    marketplace: Marketplace = Query(None),
     session: AsyncSession = Depends(get_async_session)
 ) -> list[TrackDB]:
+    filter_schema = TrackFilterSchema(
+        marketplace=marketplace,
+        is_active=is_active
+    )
     """Возвращает все объекты Track."""
-    return await track_crud.get_multy(session)
+    return await track_crud.get_multy(filter_schema, session)
 
 
 @router.get(
@@ -60,6 +67,7 @@ async def update_track(
     session: AsyncSession = Depends(get_async_session)
 ) -> TrackDB:
     """Частично обновляет существующий объект Track по id."""
+    await check_track_exists_by_id(track_id, track_crud, session)
     return await track_crud.update(
         await track_crud.get(track_id, session),
         update_track_schema,
@@ -76,6 +84,7 @@ async def delete_track(
     track_id: int,
     session: AsyncSession = Depends(get_async_session)
 ) -> TrackDB:
+    await check_track_exists_by_id(track_id, track_crud, session)
     return await track_crud.delete(
         await track_crud.get(track_id, session), session
     )

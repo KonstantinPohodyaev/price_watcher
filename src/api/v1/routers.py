@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
-from src.api.v1.endpoints import user_router, track_router
-
+from src.api.v1.endpoints import track_router, user_router
 
 TRACK_TAGS = ['track']
 

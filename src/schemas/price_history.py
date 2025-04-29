@@ -3,7 +3,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 TITLE_PRICE = 'Цена'
 BASE_PRICE_HISTORY_TITLE = (
     'Базовый класс Pydantic-схемы для модели PriceHistory'

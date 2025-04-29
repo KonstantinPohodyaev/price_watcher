@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.database.annotations import int_pk, not_null_str
+from src.database.enums import Marketplace
 from src.models.base import Base
-from src.database.annotations import not_null_str
-from src.database.annotations import int_pk
 
 if TYPE_CHECKING:
-    from src.models.user import User
     from src.models.price_history import PriceHistory
+    from src.models.user import User
 
 
 URL_MAX_LENGTH = 2 ** 11
@@ -22,6 +22,9 @@ class Track(Base):
     """Модель для отслеживаемого url."""
 
     id: Mapped[int_pk]
+    marketplace: Mapped[Marketplace] = mapped_column(
+        nullable=False
+    )
     url: Mapped[str] = mapped_column(
         String(URL_MAX_LENGTH),
         nullable=False,

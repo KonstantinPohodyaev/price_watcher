@@ -2,10 +2,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
-from src.models.track import URL_MAX_LENGTH, IMAGE_URL_MAX_LENGTH
 from src.database.annotations import not_null_str
+from src.database.enums import Marketplace
+from src.models.track import IMAGE_URL_MAX_LENGTH, URL_MAX_LENGTH
+
 
 URL_TITLE = 'URL-адрес товара'
 BASE_TRACK_TITLE = (
@@ -25,13 +27,14 @@ TRACK_UPDATE_TITLE = (
 
 class BaseTrack(BaseModel):
     """Базовая схема для модели PriceHistory."""
-    url: HttpUrl = Field(
+    marketplace: Marketplace = Field(...)
+    url: str = Field(
         None,
         title=URL_TITLE,
         max_length=URL_MAX_LENGTH
     )
     title: Optional[not_null_str]
-    image_url: HttpUrl = Field(
+    image_url: str = Field(
         None, max_length=IMAGE_URL_MAX_LENGTH
     )
     target_price: Optional[Decimal]
@@ -55,13 +58,14 @@ class TrackDB(BaseTrack):
 class TrackCreate(BaseTrack):
     """Pydantic-схема для создания экземпляра Track в БД."""
 
-    url: HttpUrl = Field(
+    marketplace: Marketplace
+    url: str = Field(
         ...,
         title=URL_TITLE,
         max_length=URL_MAX_LENGTH
     )
     title: not_null_str
-    image_url: HttpUrl = Field(
+    image_url: str = Field(
         ..., max_length=IMAGE_URL_MAX_LENGTH
     )
     target_price: Decimal
@@ -75,3 +79,8 @@ class TrackUpdate(BaseTrack):
 
     class Config:
         title = TRACK_UPDATE_TITLE
+
+
+class TrackFilterSchema(BaseModel):
+    marketplace: Optional[Marketplace]
+    is_active: Optional[bool]

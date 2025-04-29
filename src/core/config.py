@@ -1,9 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
-
 
 DEFAULT_APP_TITLE = 'Price Watcher'
 DEFAULT_APP_DESCRIPTION = 'Сервис для просмотра цен.'
