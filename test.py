@@ -1,3 +1,7 @@
+import threading
+from time import sleep
+
+
 def func_1():
     """Поиск самого длинного палиндрома в списке."""
     count_of_zones = int(input('Введите кол-во записей: '))
@@ -66,19 +70,27 @@ def func_2():
     print(result)
 
 
-def dz():
-    for X1 in range(0, 2):
-        for X2 in range(0, 2):
-            for X3 in range(0, 2):
-                for X4 in range(0, 2):
-                    for X5 in range(0, 2):
-                        term1 = (not X1) and X2 and X3
-                        term2 = X2 and X3 and (not X4)
-                        term3 = (not X1) and X2 and (not X3) and X4
-                        term4 = X1 and (not X3) and (not X4) and X5
-                        term5 = (not X2) and X3 and X5
-                        
-                        print(X1, X2, X3, X4, X5, f'Y = {int(term1 or term2 or term3 or term4 or term5)}')
+def func1(time_for_sleep):
+    print(f'Функция 1 засыпает на {time_for_sleep} секунд...')
+    sleep(time_for_sleep)
+    print('Функция 1 проснулась!')
 
 
-dz()
+def func2():
+    print(f'Функция 2 засыпает на 1 раз')
+    sleep(2)
+    print(f'Функция 2 засыпает 2 раз')
+    sleep(2)
+    print(f'Функция 2 засыпает 3 раз')
+    sleep(2)
+    print('Функция 2 проснулась!')
+
+
+if __name__ == '__main__':
+    t1 = threading.Thread(target=func1, args=(3,))
+    t2 = threading.Thread(target=func2)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    print('Окончание работы основного потока!')

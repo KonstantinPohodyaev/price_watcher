@@ -1,8 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
+from uuid import UUID
 
-from sqlalchemy import String
+from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.annotations import int_pk, not_null_str
@@ -25,10 +26,8 @@ class Track(Base):
     marketplace: Mapped[Marketplace] = mapped_column(
         nullable=False
     )
-    url: Mapped[str] = mapped_column(
-        String(URL_MAX_LENGTH),
-        nullable=False,
-        unique=True
+    article: Mapped[str] = mapped_column(
+        nullable=False, unique=True
     )
     title: Mapped[not_null_str]
     image_url: Mapped[str | None] = mapped_column(
@@ -47,11 +46,13 @@ class Track(Base):
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
-    users: Mapped[list['User']] = relationship(
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey('user.id', ondelete='CASCADE')
+    )
+    user: Mapped['User'] = relationship(
         'User',
         back_populates='tracks',
         lazy='selectin',
-        secondary='user_track',
     )
     price_history: Mapped[list['PriceHistory']] = relationship(
         'PriceHistory',

@@ -34,7 +34,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """Инициализирует CRUD-класс с указанной моделью."""
         self.model = model
 
-    async def get_multy(
+    async def get_all(
         self, session: AsyncSession
     ) -> Optional[list[ModelType]]:
         """Возвращает все объекты модели."""

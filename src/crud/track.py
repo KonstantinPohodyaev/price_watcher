@@ -9,9 +9,9 @@ from src.schemas.track import TrackCreate, TrackUpdate
 
 
 class TrackCRUD(CRUDBase[Track, TrackCreate, TrackUpdate]):
-    async def get_multy(self, filter_schema, session: AsyncSession):
+    async def get_all(self, filter_schema, session: AsyncSession):
         query = select(self.model)
-        filters = []
+        filters = [self.model.user_id == filter_schema.user_id]
         if filter_schema.marketplace:
             filters.append(
                 self.model.marketplace == filter_schema.marketplace

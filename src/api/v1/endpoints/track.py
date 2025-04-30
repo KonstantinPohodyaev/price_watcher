@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.v1.validators import check_track_exists_by_id
+from src.api.v1.validators import (
+    check_track_exists_by_id, check_unique_track_by_marketplace_article
+)
 from src.crud.track import track_crud
 from src.database.db import get_async_session
 from src.database.enums import Marketplace
 from src.schemas.track import (TrackCreate, TrackDB, TrackFilterSchema,
                                TrackUpdate)
+from src.core.user import current_user
+from src.models.user import User
 
 router = APIRouter()
 
@@ -16,17 +20,19 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
     response_model=list[TrackDB]
 )
-async def get_tracks(
+async def get_users_tracks(
     is_active: bool = Query(None),
     marketplace: Marketplace = Query(None),
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ) -> list[TrackDB]:
     filter_schema = TrackFilterSchema(
         marketplace=marketplace,
-        is_active=is_active
+        is_active=is_active,
+        user_id=user.id
     )
     """Возвращает все объекты Track."""
-    return await track_crud.get_multy(filter_schema, session)
+    return await track_crud.get_all(filter_schema, session)
 
 
 @router.get(
@@ -50,9 +56,16 @@ async def get_track_by_id(
 )
 async def create_track(
     create_track_schema: TrackCreate,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ) -> TrackDB:
     """Создает новый объект Track."""
+    await check_unique_track_by_marketplace_article(
+        marketplace=create_track_schema.marketplace,
+        article=create_track_schema.article,
+        user_id=user.id
+    )
+    create_track_schema.user_id = user.id
     return await track_crud.create(create_track_schema, session)
 
 
