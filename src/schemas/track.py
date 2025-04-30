@@ -1,11 +1,14 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
-from src.models.track import URL_MAX_LENGTH, IMAGE_URL_MAX_LENGTH
 from src.database.annotations import not_null_str
+from src.database.enums import Marketplace
+from src.models.track import IMAGE_URL_MAX_LENGTH, URL_MAX_LENGTH
+
 
 URL_TITLE = 'URL-адрес товара'
 BASE_TRACK_TITLE = (
@@ -25,20 +28,17 @@ TRACK_UPDATE_TITLE = (
 
 class BaseTrack(BaseModel):
     """Базовая схема для модели PriceHistory."""
-    id: Optional[int]
-    url: HttpUrl = Field(
-        None,
-        title=URL_TITLE,
-        max_length=URL_MAX_LENGTH
-    )
+    marketplace: Optional[Marketplace]
+    article: Optional[str]
     title: Optional[not_null_str]
-    image_url: HttpUrl = Field(
+    image_url: str = Field(
         None, max_length=IMAGE_URL_MAX_LENGTH
     )
     target_price: Optional[Decimal]
     current_price: Optional[Decimal]
     last_checked_at: Optional[datetime]
     is_active: Optional[bool]
+    user_id: Optional[UUID]
 
     class Config:
         title = BASE_TRACK_TITLE
@@ -46,24 +46,24 @@ class BaseTrack(BaseModel):
 
 class TrackDB(BaseTrack):
     """Схема для отображения PriceHistory в БД."""
+    id: Optional[int]
 
     class Config:
         title = TRACK_DB_TITLE
+        from_attributes = True
 
 
 class TrackCreate(BaseTrack):
     """Pydantic-схема для создания экземпляра Track в БД."""
 
-    url: HttpUrl = Field(
-        ...,
-        title=URL_TITLE,
-        max_length=URL_MAX_LENGTH
-    )
+    marketplace: Marketplace
+    article: str
     title: not_null_str
-    image_url: HttpUrl = Field(
+    image_url: str = Field(
         ..., max_length=IMAGE_URL_MAX_LENGTH
     )
     target_price: Decimal
+    user_id: UUID
 
     class Config:
         title = TRACK_CREATE_TITLE
@@ -74,3 +74,9 @@ class TrackUpdate(BaseTrack):
 
     class Config:
         title = TRACK_UPDATE_TITLE
+
+
+class TrackFilterSchema(BaseModel):
+    marketplace: Optional[Marketplace]
+    is_active: Optional[bool]
+    user_id: Optional[UUID]

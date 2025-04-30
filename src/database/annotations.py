@@ -5,7 +5,6 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import mapped_column
 
-
 int_pk = Annotated[
     int, mapped_column(primary_key=True, unique=True, autoincrement=True)
 ]

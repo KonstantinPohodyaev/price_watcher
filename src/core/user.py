@@ -1,12 +1,11 @@
 from typing import Union
+from uuid import UUID
 
 from fastapi import Depends
-from fastapi_users import (
-    BaseUserManager, FastAPIUsers, IntegerIDMixin, InvalidPasswordException
-)
-from fastapi_users.authentication import (
-    AuthenticationBackend, BearerTransport, JWTStrategy
-)
+from fastapi_users import (BaseUserManager, FastAPIUsers, UUIDIDMixin,
+                           InvalidPasswordException)
+from fastapi_users.authentication import (AuthenticationBackend,
+                                          BearerTransport, JWTStrategy)
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +13,6 @@ from src.core.config import settings
 from src.database.db import get_async_session
 from src.models.user import User
 from src.schemas.user import UserCreate
-
 
 BEARER_TRANSPORT_TOKEN_URL = 'auth/jwt/login'
 LIFETIME_SECONDS = 3600
@@ -30,14 +28,14 @@ async def get_user_db(
 ):
     yield SQLAlchemyUserDatabase(session, User)
 
-bearer_transport = BearerTransport(
-    tokenUrl=BEARER_TRANSPORT_TOKEN_URL
-)
+bearer_transport = BearerTransport(tokenUrl=BEARER_TRANSPORT_TOKEN_URL)
+
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(
         secret=settings.secret, lifetime_seconds=LIFETIME_SECONDS
     )
+
 
 auth_backend = AuthenticationBackend(
     name=AUTH_BACKEND_NAME,
@@ -46,7 +44,7 @@ auth_backend = AuthenticationBackend(
 )
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+class UserManager(UUIDIDMixin, BaseUserManager[User, int]):
     async def validate_password(
         self,
         password: str,
@@ -58,18 +56,18 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
                     min_password_length=MIN_PASSWORD_LENGTH
                 )
             )
-        for user_field in [user.email, user.name, user.surname]:
-            if user_field in password:
-                raise InvalidPasswordException(
-                    reason=PASSWORD_DATA_ERROR
-                )
+        # for user_field in [user.email, user.name, user.surname]:
+        #     if user_field in password:
+        #         raise InvalidPasswordException(
+        #             reason=PASSWORD_DATA_ERROR
+        #         )
 
 
 async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(user_db)
 
 
-fastapi_users = FastAPIUsers[User, int](
+fastapi_users = FastAPIUsers[User, UUID](
     get_user_manager,
     [auth_backend]
 )
