@@ -25,6 +25,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 class ShortUserRead(BaseModel):
+    """Укороченная схема пользователя."""
     id: UUID
     email: str
     name: Optional[str]
