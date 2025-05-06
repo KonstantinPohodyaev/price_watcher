@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 NAME_MAX_LENGTH = 128
 SURNAME_MAX_LENGTH = 128
+EMAIL_MAX_LENGTH = 256
 
 
 class User(Base, SQLAlchemyBaseUserTableUUID):
@@ -37,7 +38,9 @@ class User(Base, SQLAlchemyBaseUserTableUUID):
     )
     tracks: Mapped[list['Track']] = relationship(
         'Track',
-        back_populates='users',
-        secondary='user_track',
+        back_populates='user',
         lazy='selectin'
+    )
+    is_verified: Mapped[bool] = mapped_column(
+        nullable=False, default=True
     )

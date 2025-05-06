@@ -1,10 +1,10 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import mapped_column
-
 
 int_pk = Annotated[
     int, mapped_column(primary_key=True, unique=True, autoincrement=True)
@@ -26,4 +26,8 @@ updated_at = Annotated[
 not_null_str = Annotated[
     str,
     mapped_column(nullable=True)
+]
+not_null_decimal = Annotated[
+    Decimal,
+    mapped_column(nullable=False)
 ]

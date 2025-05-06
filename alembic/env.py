@@ -6,9 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
-from src.database.alembic_models import Base
 from src.core.config import settings
+from src.database.alembic_models import Base
 
 config = context.config
 config.set_main_option('sqlalchemy.url', settings.database_url)

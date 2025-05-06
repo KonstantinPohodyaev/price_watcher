@@ -6,7 +6,7 @@ from src.models.base import Base
 
 class UserTrack(Base):
     """Связующая таблица между моделями User и Track."""
-    
+
     __tablename__ = 'user_track'
 
     user_id: Mapped[int] = mapped_column(
