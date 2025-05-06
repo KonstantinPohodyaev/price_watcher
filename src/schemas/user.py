@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi_users import schemas
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 
 class UserRead(schemas.BaseUser[int]):
@@ -22,3 +22,11 @@ class UserUpdate(schemas.BaseUserUpdate):
     telegram_id: Optional[int]
     name: Optional[str]
     surname: Optional[str]
+
+
+class ShortUserRead(BaseModel):
+    id: UUID
+    email: str
+    name: Optional[str]
+    surname: Optional[str]
+    is_superuser: bool

@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 from sqlalchemy import func
@@ -25,4 +26,8 @@ updated_at = Annotated[
 not_null_str = Annotated[
     str,
     mapped_column(nullable=True)
+]
+not_null_decimal = Annotated[
+    Decimal,
+    mapped_column(nullable=False)
 ]

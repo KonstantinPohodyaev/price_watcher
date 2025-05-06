@@ -8,7 +8,7 @@ from src.models.track import Track
 
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
 NOT_UNIQUE_TRACK_BY_MARKETPLACE_AND_ARTICLE = (
-    'Товар с маркетплэйсом {merketplace} и артикулом {article} '
+    'Товар с маркетплэйсом {marketplace} и артикулом {article} '
     'уже был добален пользователем {email}.'
 )
 
@@ -48,7 +48,7 @@ async def check_unique_track_by_marketplace_article(
     session: AsyncSession
 ) -> None:
     """Проверяет, нет ли у пользователя уже такого товара в базе."""
-    db_object = await session.execute(
+    result = await session.execute(
         select(Track).where(
             and_(
                 Track.marketplace == marketplace,
@@ -57,7 +57,8 @@ async def check_unique_track_by_marketplace_article(
             )
         )
     )
-    if db_object:
+
+    if result.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=NOT_UNIQUE_TRACK_BY_MARKETPLACE_AND_ARTICLE.format(

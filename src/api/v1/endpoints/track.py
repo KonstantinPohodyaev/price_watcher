@@ -4,11 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.v1.validators import (
     check_track_exists_by_id, check_unique_track_by_marketplace_article
 )
+from src.api.v1.utils import wildberries_parse, get_wildberries_product_data
 from src.crud.track import track_crud
 from src.database.db import get_async_session
 from src.database.enums import Marketplace
-from src.schemas.track import (TrackCreate, TrackDB, TrackFilterSchema,
-                               TrackUpdate)
+from src.schemas.track import (TrackUserDataCreate, TrackDB, TrackFilterSchema,
+                               TrackUpdate, TrackDBCreate)
 from src.core.user import current_user
 from src.models.user import User
 
@@ -18,7 +19,8 @@ router = APIRouter()
 @router.get(
     '/tracks',
     status_code=status.HTTP_200_OK,
-    response_model=list[TrackDB]
+    response_model=list[TrackDB],
+    response_model_exclude_none=True
 )
 async def get_users_tracks(
     is_active: bool = Query(None),
@@ -38,7 +40,8 @@ async def get_users_tracks(
 @router.get(
     '/tracks/{track_id}',
     status_code=status.HTTP_200_OK,
-    response_model=TrackDB
+    response_model=TrackDB,
+    response_model_exclude_none=True
 )
 async def get_track_by_id(
     track_id: int,
@@ -55,18 +58,29 @@ async def get_track_by_id(
     response_model=TrackDB
 )
 async def create_track(
-    create_track_schema: TrackCreate,
+    create_track_schema: TrackUserDataCreate,
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user)
-) -> TrackDB:
+):
     """Создает новый объект Track."""
     await check_unique_track_by_marketplace_article(
-        marketplace=create_track_schema.marketplace,
-        article=create_track_schema.article,
-        user_id=user.id
+        create_track_schema.marketplace,
+        create_track_schema.article,
+        user.id,
+        session
     )
-    create_track_schema.user_id = user.id
-    return await track_crud.create(create_track_schema, session)
+    track_db_create_schema = TrackDBCreate(
+        user_id=user.id, **create_track_schema.model_dump()
+    )
+    parsed_data = await wildberries_parse(
+        track_db_create_schema
+    )
+    create_track_schema = get_wildberries_product_data(
+        track_db_create_schema, parsed_data
+    )
+    return await track_crud.create(
+        track_db_create_schema, session
+    )
 
 
 @router.patch(

@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.base import CRUDBase
 from src.models.track import Track
-from src.schemas.track import TrackCreate, TrackUpdate
+from src.schemas.track import TrackDBCreate, TrackUpdate
 
 
-class TrackCRUD(CRUDBase[Track, TrackCreate, TrackUpdate]):
+class TrackCRUD(CRUDBase[Track, TrackDBCreate, TrackUpdate]):
     async def get_all(self, filter_schema, session: AsyncSession):
         query = select(self.model)
         filters = [self.model.user_id == filter_schema.user_id]
