@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 4ec0f62ad132
+Revision ID: ab31d93821af
 Revises: 
-Create Date: 2025-04-30 21:37:45.841284
+Create Date: 2025-05-24 23:05:34.517505
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 import fastapi_users_db_sqlalchemy
 
 # revision identifiers, used by Alembic.
-revision: str = '4ec0f62ad132'
+revision: str = 'ab31d93821af'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,7 +41,7 @@ def upgrade() -> None:
     op.create_table('track',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('marketplace', sa.Enum('WILDBERRIES', 'OZON', name='marketplace'), nullable=False),
-    sa.Column('article', sa.String(), nullable=False),
+    sa.Column('article', sa.String(), nullable=True),
     sa.Column('title', sa.String(), nullable=True),
     sa.Column('image_url', sa.String(length=2048), nullable=True),
     sa.Column('target_price', sa.Numeric(), nullable=False),
@@ -53,7 +53,6 @@ def upgrade() -> None:
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('article'),
     sa.UniqueConstraint('id')
     )
     op.create_table('pricehistory',
