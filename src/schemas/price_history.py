@@ -46,5 +46,3 @@ class PriceHistoryCreate(BaseModel):
 
 class PriceHistoryUpdate(BasePriceHistory):
     """Схема для обновления записи истории."""
-
-    pass

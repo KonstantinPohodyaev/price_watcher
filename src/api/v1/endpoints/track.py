@@ -10,6 +10,8 @@ from src.database.db import get_async_session
 from src.database.enums import Marketplace
 from src.schemas.track import (TrackUserDataCreate, TrackDB, TrackFilterSchema,
                                TrackUpdate, TrackDBCreate)
+from src.schemas.price_history import PriceHistoryCreate
+from src.crud.price_history import price_history_crud
 from src.core.user import current_user
 from src.models.user import User
 
@@ -78,9 +80,17 @@ async def create_track(
     create_track_schema = get_wildberries_product_data(
         track_db_create_schema, parsed_data
     )
-    return await track_crud.create(
+    new_track = await track_crud.create(
         track_db_create_schema, session
     )
+    await price_history_crud.create(
+        PriceHistoryCreate(
+            price=new_track.current_price,
+            track_id=new_track.id
+        ),
+        session
+    )
+    return new_track
 
 
 @router.patch(
