@@ -6,11 +6,13 @@ from sqlalchemy import select, and_
 
 from src.models.track import Track
 
+
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
 NOT_UNIQUE_TRACK_BY_MARKETPLACE_AND_ARTICLE = (
     'Товар с маркетплэйсом {marketplace} и артикулом {article} '
     'уже был добален пользователем {email}.'
 )
+NOT_EXISTENT_ARTICLE_ERROR = 'Товара с артикулом {article} не существует!'
 
 
 async def check_object_exists_by_id(
@@ -65,5 +67,16 @@ async def check_unique_track_by_marketplace_article(
                 marketplace=marketplace,
                 article=article,
                 email=user_id
+            )
+        )
+
+
+def check_not_existent_article(article: str, data: dict) -> None:
+    print(data)
+    if not data['data']['products']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=NOT_EXISTENT_ARTICLE_ERROR.format(
+                article=article
             )
         )

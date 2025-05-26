@@ -9,6 +9,9 @@ from src.crud.track import track_crud
 from src.api.v1.utils import WILDBBERIES_PRODUCT_CARD_URL
 
 
+MAX_TRACKS_PRICE_HISTORY_LEN = 3
+
+
 router = APIRouter()
 
 
@@ -20,6 +23,7 @@ async def get_price_history_by_track_id(
     track_id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
+    """Возвращает историю товара."""
     return await price_history_crud.get_history_by_track_id(track_id, session)
 
 
@@ -31,7 +35,10 @@ async def add_entry_about_track(
     track_id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
+    """Создает запись в истории товара."""
     track = await track_crud.get(track_id, session)
+    if len(track.price_history) >= MAX_TRACKS_PRICE_HISTORY_LEN:
+        await price_history_crud.delete_the_oldest_price_history(session)
     async with aiohttp.ClientSession() as local_session:
         async with local_session.get(
             WILDBBERIES_PRODUCT_CARD_URL.format(

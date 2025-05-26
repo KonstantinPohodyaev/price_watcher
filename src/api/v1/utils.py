@@ -5,12 +5,9 @@ from decimal import Decimal
 import aiohttp
 
 from src.schemas.track import TrackUserDataCreate, TrackDBCreate
+from src.api.v1.constants import WILDBBERIES_PRODUCT_CARD_URL
+from src.api.v1.validators import check_not_existent_article
 
-
-WILDBBERIES_PRODUCT_CARD_URL = (
-    'https://card.wb.ru/cards/v1/detail'
-    '?appType=1&curr=rub&dest=-1257786&spp=30&nm={nm_id}'
-)
 
 async def wildberries_parse(create_track_schema: TrackUserDataCreate):
     """Получает информацию о товаре по его артикулу."""
@@ -21,6 +18,7 @@ async def wildberries_parse(create_track_schema: TrackUserDataCreate):
             )
         ) as response:
             data = await response.json()
+            check_not_existent_article(create_track_schema.article, data)
             return data
 
 
