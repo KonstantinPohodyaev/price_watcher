@@ -41,7 +41,7 @@ router.include_router(
 
 @service_router.post(
     '/check-telegram-id',
-    response_model=bool | ShortUserRead,
+    response_model=UserRead | None,
     status_code=status.HTTP_200_OK
 )
 async def check_existence_user_by_telegram_id(
@@ -51,7 +51,7 @@ async def check_existence_user_by_telegram_id(
     user = await user_crud.get_user_by_telegram_id(
         telegram_id_schema.telegram_id, session
     )
-    return user if user else False
+    return user if user else None
 
 router.include_router(
     service_router,
