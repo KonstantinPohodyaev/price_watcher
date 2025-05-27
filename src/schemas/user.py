@@ -31,3 +31,7 @@ class ShortUserRead(BaseModel):
     name: Optional[str]
     surname: Optional[str]
     is_superuser: bool
+
+
+class CheckTGID(BaseModel):
+    telegram_id: int

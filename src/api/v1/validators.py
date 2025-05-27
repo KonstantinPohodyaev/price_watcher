@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -13,6 +14,10 @@ NOT_UNIQUE_TRACK_BY_MARKETPLACE_AND_ARTICLE = (
     'уже был добален пользователем {email}.'
 )
 NOT_EXISTENT_ARTICLE_ERROR = 'Товара с артикулом {article} не существует!'
+NOT_NEGATIVE_TARGET_PRICE_ERROR = (
+    'Желаемая цена не может быть отрицательной! '
+    'Вы ввели: {target_price}'
+)
 
 
 async def check_object_exists_by_id(
@@ -30,11 +35,23 @@ async def check_object_exists_by_id(
         )
 
 
+def not_negative_target_price(target_price: Decimal) -> None:
+    """Проверяет желаемую цену."""
+    if target_price < Decimal('0'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=NOT_NEGATIVE_TARGET_PRICE_ERROR.format(
+                target_price=target_price
+            )
+        )
+
+
 async def check_track_exists_by_id(
     track_id: int,
     track_crud,
     session: AsyncSession
 ) -> None:
+    """Проверяет существование объекта Track по его id."""
     await check_object_exists_by_id(
         track_id,
         track_crud,
@@ -72,7 +89,6 @@ async def check_unique_track_by_marketplace_article(
 
 
 def check_not_existent_article(article: str, data: dict) -> None:
-    print(data)
     if not data['data']['products']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
