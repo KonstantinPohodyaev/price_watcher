@@ -1,7 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -40,7 +39,7 @@ class Track(Base):
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE')
     )
     user: Mapped['User'] = relationship(

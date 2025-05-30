@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.v1.validators import (
-    check_track_exists_by_id, check_unique_track_by_marketplace_article
+    check_track_exists_by_id, check_unique_track_by_marketplace_article,
+    not_negative_target_price
 )
 from src.api.v1.utils import wildberries_parse, get_wildberries_product_data
 from src.crud.track import track_crud
@@ -10,8 +11,14 @@ from src.database.db import get_async_session
 from src.database.enums import Marketplace
 from src.schemas.track import (TrackUserDataCreate, TrackDB, TrackFilterSchema,
                                TrackUpdate, TrackDBCreate)
+from src.schemas.price_history import PriceHistoryCreate
+from src.crud.price_history import price_history_crud
 from src.core.user import current_user
 from src.models.user import User
+
+
+COMPARE_RESPONSE_MODEL = dict(status=False)
+
 
 router = APIRouter()
 
@@ -63,6 +70,7 @@ async def create_track(
     user: User = Depends(current_user)
 ):
     """Создает новый объект Track."""
+    not_negative_target_price(create_track_schema.target_price)
     await check_unique_track_by_marketplace_article(
         create_track_schema.marketplace,
         create_track_schema.article,
@@ -73,14 +81,22 @@ async def create_track(
         user_id=user.id, **create_track_schema.model_dump()
     )
     parsed_data = await wildberries_parse(
-        track_db_create_schema
+        track_db_create_schema.article
     )
     create_track_schema = get_wildberries_product_data(
         track_db_create_schema, parsed_data
     )
-    return await track_crud.create(
+    new_track = await track_crud.create(
         track_db_create_schema, session
     )
+    await price_history_crud.create(
+        PriceHistoryCreate(
+            price=new_track.current_price,
+            track_id=new_track.id
+        ),
+        session
+    )
+    return new_track
 
 
 @router.patch(
@@ -93,13 +109,51 @@ async def update_track(
     update_track_schema: TrackUpdate,
     session: AsyncSession = Depends(get_async_session)
 ) -> TrackDB:
-    """Частично обновляет существующий объект Track по id."""
+    """Обновляет существующий объект Track по id (вручную)."""
     await check_track_exists_by_id(track_id, track_crud, session)
     return await track_crud.update(
         await track_crud.get(track_id, session),
         update_track_schema,
         session
     )
+
+
+@router.patch(
+    '/tracks/refresh/{track_id}',
+    response_model=TrackDB,
+    status_code=status.HTTP_200_OK
+)
+async def refresh_data_for_existen_track(
+    track_id: int,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Обновляет данные о товаре (для онлайн режима)."""
+    track = await track_crud.get(track_id, session)
+    new_parsed_data = await wildberries_parse(track.article)
+    update_track_schema = get_wildberries_product_data(
+        TrackUpdate(), new_parsed_data
+    )
+    return await track_crud.update(
+        track,
+        update_track_schema,
+        session
+    )
+
+
+@router.get(
+    '/tracks/compare-price/{track_id}',
+    response_model=dict[str, bool],
+    status_code=status.HTTP_200_OK
+)
+async def compare_target_and_current_price(
+    track_id: int,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Сравнивает текущую и целевую цену товара."""
+    track = await track_crud.get(track_id, session)
+    if track.current_price <= track.target_price:
+        return dict(status=True)
+    return dict(status=False)
 
 
 @router.delete(
@@ -115,3 +169,4 @@ async def delete_track(
     return await track_crud.delete(
         await track_crud.get(track_id, session), session
     )
+
