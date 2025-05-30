@@ -11,6 +11,7 @@ BASE_PRICE_HISTORY_TITLE = (
 PRICE_HISTORY_DB = (
     'Pydantic-схема для отображения PriceHistory в БД.'
 )
+TITLE_TRACK_ID = 'ID товара'
 
 
 class BasePriceHistory(BaseModel):
@@ -19,6 +20,10 @@ class BasePriceHistory(BaseModel):
     price: Decimal = Field(
         None,
         title=TITLE_PRICE
+    )
+    track_id: int = Field(
+        None,
+        title=TITLE_TRACK_ID
     )
 
     class Config:
@@ -30,3 +35,14 @@ class PriceHistoryDB(BasePriceHistory):
 
     class Config:
         title = PRICE_HISTORY_DB
+
+
+class PriceHistoryCreate(BaseModel):
+    """Схема для создания записи в истории."""
+
+    price: Decimal
+    track_id: int
+
+
+class PriceHistoryUpdate(BasePriceHistory):
+    """Схема для обновления записи истории."""

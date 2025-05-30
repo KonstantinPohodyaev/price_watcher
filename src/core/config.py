@@ -11,15 +11,21 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    database_url: str = os.getenv('DATABASE_URL')
+    db_dialect: str = os.getenv('DB_DIALECT')
+    db_driver: str = os.getenv('DB_DRIVER')
+    db_name: str = os.getenv('DB_NAME')
     secret: str = os.getenv('SECRET')
     title: str = os.getenv('TITLE', DEFAULT_APP_TITLE)
     description: str = os.getenv('DESCRIPTION', DEFAULT_APP_DESCRIPTION)
     first_superuser_email: str = os.getenv('FIRST_SUPERUSER_EMAIL')
     first_superuser_password: str = os.getenv('FIRST_SUPERUSER_PASSWORD')
 
-    class Config:
-        env_file = '.env'
+    @property
+    def database_url(self):
+        return (
+            f'{self.db_dialect}+{self.db_driver}:'
+            f'///{self.db_name}'
+        )
 
 
 settings = Settings()

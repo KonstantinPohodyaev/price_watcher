@@ -1,0 +1,1 @@
+from bot.handlers.base import handlers_installer as base_installer_handlers # noqa

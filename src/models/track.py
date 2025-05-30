@@ -1,12 +1,11 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.annotations import int_pk, not_null_str
+from src.database.annotations import int_pk, not_null_str, not_null_decimal
 from src.database.enums import Marketplace
 from src.models.base import Base
 
@@ -26,27 +25,21 @@ class Track(Base):
     marketplace: Mapped[Marketplace] = mapped_column(
         nullable=False
     )
-    article: Mapped[str] = mapped_column(
-        nullable=False, unique=True
-    )
+    article: Mapped[not_null_str]
     title: Mapped[not_null_str]
     image_url: Mapped[str | None] = mapped_column(
         String(IMAGE_URL_MAX_LENGTH),
         nullable=True
     )
-    target_price: Mapped[Decimal] = mapped_column(
-        nullable=False
-    )
-    current_price: Mapped[Decimal] = mapped_column(
-        nullable=False
-    )
+    target_price: Mapped[not_null_decimal]
+    current_price: Mapped[not_null_decimal]
     last_checked_at: Mapped[datetime] = mapped_column(
         nullable=True
     )
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE')
     )
     user: Mapped['User'] = relationship(
