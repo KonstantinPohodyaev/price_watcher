@@ -1,15 +1,15 @@
 from typing import Optional
-from uuid import UUID
 
 from fastapi_users import schemas
 from pydantic import Field, BaseModel
 
 
 class UserRead(schemas.BaseUser[int]):
-    id: Optional[UUID]
+    id: Optional[int]
     telegram_id: Optional[int]
     name: Optional[str]
     surname: Optional[str]
+    hashed_password: Optional[str]
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -26,7 +26,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 class ShortUserRead(BaseModel):
     """Укороченная схема пользователя."""
-    id: UUID
+    id: int
     email: str
     name: Optional[str]
     surname: Optional[str]

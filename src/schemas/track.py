@@ -1,7 +1,6 @@
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
-from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -95,7 +94,7 @@ class TrackUserDataCreate(BaseModel):
 
 
 class TrackDBCreate(BaseTrack):
-    user_id: Optional[UUID] = Field(None)
+    user_id: Optional[int] = Field(None)
 
 
 class TrackUpdate(BaseTrack):
@@ -108,4 +107,4 @@ class TrackUpdate(BaseTrack):
 class TrackFilterSchema(BaseModel):
     marketplace: Optional[Marketplace]
     is_active: Optional[bool]
-    user_id: Optional[UUID]
+    user_id: Optional[int]

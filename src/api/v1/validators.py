@@ -1,5 +1,4 @@
 from decimal import Decimal
-from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,7 +62,7 @@ async def check_track_exists_by_id(
 async def check_unique_track_by_marketplace_article(
     marketplace: str,
     article: str,
-    user_id: UUID,
+    user_id: int,
     session: AsyncSession
 ) -> None:
     """Проверяет, нет ли у пользователя уже такого товара в базе."""
