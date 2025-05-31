@@ -11,6 +11,7 @@ from bot.endpoints import (
     GET_USER_BY_TELEGRAM_ID, REGISTER_USER, GET_JWT_TOKEN, USERS_ENDPOINT
 )
 from bot.handlers.utils import check_password, load_user_data
+from bot.handlers.validators import validate_full_name
 
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
@@ -23,13 +24,14 @@ _______________
 если цена упала до желаемой!
 /start - запуск бота
 /info - информация о боте
-/account - настройки аккаунта
+/account_info - настройки аккаунта
 """
 
-ACCOUNT_SETTINGS = """
+ACCOUNT_INFO = """
 Настройки аккаунта
 __________________
 /delete_account - удалить аккаунт
+/account_data - посмотреть данные аккаунта
 """
 
 
@@ -71,15 +73,24 @@ async def info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     await update.message.reply_text(
-        ACCOUNT_SETTINGS
+        INFO
     )
 
 
-async def account_settings(
+async def account_info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     await update.message.reply_text(
-        INFO
+        ACCOUNT_INFO
+    )
+
+
+async def check_account_data(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    await update.message.reply_text(
+        text=f'```{context.user_data["account"]}```',
+        parse_mode='MarkdownV2'
     )
 
 
@@ -97,6 +108,12 @@ async def start_registration(
 
 
 async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not validate_full_name(update.message.text):
+        await update.message.reply_text(
+            'Неверный формат ввода имени и фамилии 🚫\n'
+            'Попробуйте еще раз:'
+        )
+        return 'name_and_surname'
     name, surname = update.message.text.split()
     context.user_data['account']['name'] = name
     context.user_data['account']['surname'] = surname
@@ -152,7 +169,7 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def get_password_for_authentication(
+async def get_password_for_authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if update.callback_query:
@@ -188,9 +205,11 @@ async def authorization(
                 )
                 return 'authorization'
             if context.user_data['account'].get('jwt_token'):
+                print(context.user_data['account'].get('jwt_token'))
                 await update.message.reply_text(
                     'Авторизация уже пройдена!'
                 )
+                return ConversationHandler.END
             else:
                 request_body = dict(
                     grant_type='password',
@@ -244,8 +263,18 @@ async def delete_account(
                     'Попробуйте еще раз.'
                 )
                 return 'delete_account'
+            if not context.user_data['account'].get('jwt_token'):
+                await update.message.reply_text(
+                    'Для удаления аккаунта необходима авторизация'
+                )
+                return ConversationHandler.END
             async with session.delete(
-                USERS_ENDPOINT + f'/{context.user_data["account"]["id"]}'
+                USERS_ENDPOINT + f'/{context.user_data["account"]["id"]}',
+                headers=dict(
+                    Authorization=(
+                        f'Bearer {context.user_data["account"]["jwt_token"]}'
+                    )
+                )
             ):
                 await update.message.reply_text(
                     'Ваш акккаунт удален!'
@@ -268,6 +297,12 @@ def handlers_installer(
     application.add_handler(
         CommandHandler('info', info)
     )
+    application.add_handler(
+        CommandHandler('account_info', account_info)
+    )
+    application.add_handler(
+        CommandHandler('account_data', check_account_data)
+    )
     registration_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
@@ -289,10 +324,10 @@ def handlers_installer(
     authorization_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
-                get_password_for_authentication, pattern='^authorization$'
+                get_password_for_authorization, pattern='^authorization$'
             ),
             CommandHandler(
-                'auth', get_password_for_authentication
+                'auth', get_password_for_authorization
             ),
         ],
         states={
@@ -300,7 +335,7 @@ def handlers_installer(
                 MessageHandler(MESSAGE_HANDLERS, authorization)
             ],
             'get_password': [
-                MessageHandler(MESSAGE_HANDLERS, get_password_for_authentication)
+                MessageHandler(MESSAGE_HANDLERS, get_password_for_authorization)
             ]
         },
         fallbacks=[
