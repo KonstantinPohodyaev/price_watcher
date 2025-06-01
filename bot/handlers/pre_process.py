@@ -27,5 +27,7 @@ def load_data_for_register_user(handler_func):
                 if user_data:
                     for field, value in user_data.items():
                         context.user_data['account'][field] = value
+                else:
+                    context.user_data.pop('account')
         return await handler_func(update, context)
     return wrapper

@@ -36,32 +36,26 @@ __________________
 @load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                GET_USER_BY_TELEGRAM_ID,
-                json=dict(telegram_id=int(update.message.from_user.id))
-            ) as response:
-                current_user = await response.json()
-                if current_user:
-                    await update.message.reply_text(
-                        text=(
-                            f'Привет, {current_user["name"]}\\! '
-                            f'Чем я тебе могу помочь\\? 👋\n'
-                            f'/info \\- информация о боте\n'
-                            f'/auth \\- пройти авторизацию\n'
-                        ),
-                        parse_mode='MarkdownV2'
-                    )
-                else:
-                    button = InlineKeyboardButton(
-                        'Начать регистрацию',
-                        callback_data='start_registration'
-                    )
-                    keyboard = InlineKeyboardMarkup([[button]])
-                    await update.message.reply_text(
-                        'Вы не зарегестрированы!',
-                        reply_markup=keyboard
-                    )
+        if context.user_data['account']:
+            await update.message.reply_text(
+                text=(
+                    f'Привет, {context.user_data["account"]["name"]}\\! '
+                    f'Чем я тебе могу помочь\\? 👋\n'
+                    f'/info \\- информация о боте\n'
+                    f'/auth \\- пройти авторизацию\n'
+                ),
+                parse_mode='MarkdownV2'
+            )
+        else:
+            button = InlineKeyboardButton(
+                'Начать регистрацию',
+                callback_data='start_registration'
+            )
+            keyboard = InlineKeyboardMarkup([[button]])
+            await update.message.reply_text(
+                'Вы не зарегестрированы!',
+                reply_markup=keyboard
+            )
     except Exception as error:
         await update.message.reply_text(
             'К сожалению возникла ошибка при аутентификации! ❌'
