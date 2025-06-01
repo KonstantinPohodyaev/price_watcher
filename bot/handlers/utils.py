@@ -36,4 +36,3 @@ async def load_user_data(
         if user_data:
             for field, value in user_data.items():
                 context.user_data['account'][field] = value
-    

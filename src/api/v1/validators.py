@@ -7,6 +7,8 @@ from sqlalchemy import select, and_
 
 from src.models.track import Track
 from src.models.user import User
+from src.models.jwt_auth import JWTToken
+from src.crud.jwt_auth import jwt_token_crud
 
 
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
@@ -22,6 +24,9 @@ NOT_EXISTENT_ARTICLE_ERROR = 'Товара с артикулом {article} не 
 NOT_NEGATIVE_TARGET_PRICE_ERROR = (
     'Желаемая цена не может быть отрицательной! '
     'Вы ввели: {target_price}'
+)
+CHECK_UNIQUE_JWT_TOKEN_ERROR = (
+    'Токен для юзера с id = {user_id} уже был создан.'
 )
 
 
@@ -127,3 +132,22 @@ def check_not_existent_article(article: str, data: dict) -> None:
                 article=article
             )
         )
+
+
+async def check_unique_jwt_token_exists_by_user_id(
+    user_id: int,
+    session: AsyncSession
+):
+    """Проверяет уникальность JWT-токена по user_id."""
+    jwt_token = await jwt_token_crud.get_jwt_token_by_user_id(
+        user_id, session
+    )
+    return jwt_token
+    # if jwt_token:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=CHECK_UNIQUE_JWT_TOKEN_ERROR.format(
+    #             user_id=user_id
+    #         )
+    #     )
+    # return jwt_token

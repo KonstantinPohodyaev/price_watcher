@@ -3,6 +3,8 @@ from typing import Optional
 from fastapi_users import schemas
 from pydantic import Field, BaseModel
 
+from src.schemas.jwt_auth import JWTRead
+
 
 class UserRead(schemas.BaseUser[int]):
     id: Optional[int]
@@ -10,6 +12,7 @@ class UserRead(schemas.BaseUser[int]):
     name: Optional[str]
     surname: Optional[str]
     hashed_password: Optional[str]
+    # jwt_token: Optional[JWTRead]
 
 
 class UserCreate(schemas.BaseUserCreate):

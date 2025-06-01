@@ -1,4 +1,12 @@
-from fastapi import APIRouter, status, Depends
+import json
+
+from fastapi import APIRouter, status, Depends, Request, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_users.manager import BaseUserManager
+from fastapi_users.authentication.strategy import Strategy
+from fastapi_users import models
+from fastapi_users.openapi import OpenAPIResponseType
+from fastapi_users.router.common import ErrorCode, ErrorModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
@@ -8,14 +16,18 @@ from src.schemas.user import (
 )
 from src.database.db import get_async_session
 from src.crud.user import user_crud
+from src.crud.jwt_auth import jwt_token_crud
 from src.models.user import User
 from src.core.user import (
     current_superuser, current_user, get_user_db, UserManager,
     get_user_manager
 )
 from src.api.v1.validators import (
-    check_user_exists_by_id, check_yourself_or_superuser
+    check_user_exists_by_id, check_yourself_or_superuser,
+    check_unique_jwt_token_exists_by_user_id
 )
+from src.core.user import AUTH_BACKEND_NAME, auth_backend
+from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
 
 
 router = APIRouter()
@@ -31,8 +43,88 @@ USER_PREFIX = '/users'
 USER_TAGS = ['users']
 
 
+auth_router = fastapi_users.get_auth_router(auth_backend)
+auth_router.routes = [
+    rout for rout in auth_router.routes if rout.name != 'auth:jwt.login'
+]
+
+login_responses: OpenAPIResponseType = {
+    status.HTTP_400_BAD_REQUEST: {
+        "model": ErrorModel,
+        "content": {
+            "application/json": {
+                "examples": {
+                    ErrorCode.LOGIN_BAD_CREDENTIALS: {
+                        "summary": "Bad credentials or the user is inactive.",
+                        "value": {"detail": ErrorCode.LOGIN_BAD_CREDENTIALS},
+                    },
+                    ErrorCode.LOGIN_USER_NOT_VERIFIED: {
+                        "summary": "The user is not verified.",
+                        "value": {"detail": ErrorCode.LOGIN_USER_NOT_VERIFIED},
+                    },
+                }
+            }
+        },
+    },
+    **auth_backend.transport.get_openapi_login_responses_success(),
+}
+
+requires_verification = True
+
+@auth_router.post(
+    "/login",
+    name=f"auth:{AUTH_BACKEND_NAME}.login",
+    responses=login_responses,
+)
+async def login(
+    request: Request,
+    credentials: OAuth2PasswordRequestForm = Depends(),
+    user_manager: BaseUserManager[models.UP, models.ID] = Depends(get_user_manager),
+    strategy: Strategy[models.UP, models.ID] = Depends(auth_backend.get_strategy),
+    session: AsyncSession = Depends(get_async_session)
+):
+    user = await user_manager.authenticate(credentials)
+
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.LOGIN_BAD_CREDENTIALS,
+        )
+    if requires_verification and not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.LOGIN_USER_NOT_VERIFIED,
+        )
+    response = await auth_backend.login(strategy, user)
+    serialized_data = json.loads(response.body.decode())
+    access_token = serialized_data.get('access_token')
+    token_type = serialized_data.get('token_type')
+    jwt_token_db = await check_unique_jwt_token_exists_by_user_id(
+        user.id, session
+    )
+    if jwt_token_db:
+        update_schema = JWTTokenUpdate(
+            access_token=access_token,
+            token_type=token_type
+        )
+        print('\n', jwt_token_db, '\n')
+        await jwt_token_crud.update(
+            jwt_token_db,
+            update_schema,
+            session
+        )
+    else:
+        create_jwt_token_schema = JWTTokenCreate(
+            access_token=access_token,
+            token_type=token_type,
+            user_id=user.id
+        )
+        await jwt_token_crud.create(create_jwt_token_schema, session)
+    await user_manager.on_after_login(user, request, response)
+    return response
+
 router.include_router(
-    fastapi_users.get_auth_router(auth_backend),
+    auth_router,
     prefix=AUTHENTICATION_PREFIX,
     tags=AUTHENTICATION_TAGS
 )

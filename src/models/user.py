@@ -8,6 +8,7 @@ from src.models.base import Base
 
 if TYPE_CHECKING:
     from src.models.track import Track
+    from src.models.jwt_auth import JWTToken
 
 NAME_MAX_LENGTH = 128
 SURNAME_MAX_LENGTH = 128
@@ -46,4 +47,11 @@ class User(Base, SQLAlchemyBaseUserTable):
     )
     is_verified: Mapped[bool] = mapped_column(
         nullable=False, default=True
+    )
+    jwt_token: Mapped['JWTToken'] = relationship(
+        'JWTToken',
+        back_populates='user',
+        uselist=False,
+        lazy='selectin',
+        cascade='all, delete-orphan'
     )
