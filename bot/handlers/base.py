@@ -177,6 +177,7 @@ async def get_password_for_authorization(
     return 'authorization'
 
 
+@load_data_for_register_user
 async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -185,9 +186,6 @@ async def authorization(
     context.user_data['account']['password'] = update.message.text
     try:
         async with aiohttp.ClientSession() as session:
-            await load_user_data(
-                session, update, context
-            )
             if not check_password(
                 context.user_data['account']['password'],
                 context.user_data['account']['hashed_password']
@@ -198,7 +196,6 @@ async def authorization(
                 )
                 return 'authorization'
             if context.user_data['account'].get('jwt_token'):
-                print(context.user_data['account'].get('jwt_token'))
                 await update.message.reply_text(
                     'Авторизация уже пройдена!'
                 )
