@@ -1,14 +1,11 @@
 from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, asc
+from sqlalchemy import asc, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.price_history import PriceHistory
-from src.schemas.price_history import (
-    PriceHistoryCreate, PriceHistoryUpdate
-)
 from src.crud.base import CRUDBase
-
+from src.models.price_history import PriceHistory
+from src.schemas.price_history import PriceHistoryCreate, PriceHistoryUpdate
 
 THE_OLDEST_DELETE_ERROR_MESSAGE = (
     'Ошибка при удалении самой старой записи в истории. '

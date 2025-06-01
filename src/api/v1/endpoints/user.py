@@ -1,34 +1,27 @@
 import json
 
-from fastapi import APIRouter, status, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_users.manager import BaseUserManager
-from fastapi_users.authentication.strategy import Strategy
 from fastapi_users import models
+from fastapi_users.authentication.strategy import Strategy
+from fastapi_users.manager import BaseUserManager
 from fastapi_users.openapi import OpenAPIResponseType
 from fastapi_users.router.common import ErrorCode, ErrorModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.user import auth_backend, fastapi_users
-from src.schemas.user import (
-    UserCreate, UserRead, UserUpdate, CheckTGID
-)
-from src.database.db import get_async_session
-from src.crud.user import user_crud
+from src.api.v1.validators import (check_unique_jwt_token_exists_by_user_id,
+                                   check_user_exists_by_id,
+                                   check_yourself_or_superuser)
+from src.core.user import (AUTH_BACKEND_NAME, UserManager, auth_backend,
+                           current_superuser, current_user, fastapi_users,
+                           get_user_db, get_user_manager)
 from src.crud.jwt_auth import jwt_token_crud
+from src.crud.user import user_crud
+from src.database.db import get_async_session
 from src.models.user import User
-from src.core.user import (
-    current_superuser, current_user, get_user_db, UserManager,
-    get_user_manager
-)
-from src.api.v1.validators import (
-    check_user_exists_by_id, check_yourself_or_superuser,
-    check_unique_jwt_token_exists_by_user_id
-)
-from src.core.user import AUTH_BACKEND_NAME, auth_backend
 from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
-
+from src.schemas.user import CheckTGID, UserCreate, UserRead, UserUpdate
 
 router = APIRouter()
 service_router = APIRouter()

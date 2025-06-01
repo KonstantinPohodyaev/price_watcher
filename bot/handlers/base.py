@@ -1,18 +1,16 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ContextTypes, ApplicationBuilder, CallbackQueryHandler,
-    CommandHandler, ConversationHandler, MessageHandler, filters
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
+                          CommandHandler, ContextTypes, ConversationHandler,
+                          MessageHandler, filters)
 
-from bot.endpoints import (
-    GET_USER_BY_TELEGRAM_ID, REGISTER_USER, GET_JWT_TOKEN, USERS_ENDPOINT
-)
+from bot.endpoints import (GET_JWT_TOKEN, GET_USER_BY_TELEGRAM_ID,
+                           REGISTER_USER, USERS_ENDPOINT)
+from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import check_password, load_user_data
 from bot.handlers.validators import validate_full_name
-
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -35,6 +33,7 @@ __________________
 """
 
 
+@load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with aiohttp.ClientSession() as session:

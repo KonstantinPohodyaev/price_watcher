@@ -1,10 +1,9 @@
 import os
 
-from telegram.ext import ApplicationBuilder
 from dotenv import load_dotenv
+from telegram.ext import ApplicationBuilder
 
 from bot.handlers import base_installer_handlers
-
 
 load_dotenv()
 

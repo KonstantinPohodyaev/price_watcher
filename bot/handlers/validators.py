@@ -1,6 +1,5 @@
 import re
 
-
 VALIDATE_FULL_NAME_PATTERN = '^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
 VALIDATE_FULL_NAME_ERROR = 'Недопустимый формат ввода имени и фамилии.'
 

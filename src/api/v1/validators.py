@@ -2,14 +2,13 @@ from decimal import Decimal
 
 from fastapi import HTTPException, status
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 
+from src.crud.jwt_auth import jwt_token_crud
+from src.models.jwt_auth import JWTToken
 from src.models.track import Track
 from src.models.user import User
-from src.models.jwt_auth import JWTToken
-from src.crud.jwt_auth import jwt_token_crud
-
 
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
 USER_NOT_EXISTS_BY_ID_ERROR = 'Пользователя с id = {id} не существует!'

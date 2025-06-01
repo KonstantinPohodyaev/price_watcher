@@ -1,15 +1,14 @@
 import os
 
+from cryptography.fernet import Fernet
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from cryptography.fernet import Fernet
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.jwt_auth import JWTToken
 from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
-
 
 fernet = Fernet(
     os.getenv(

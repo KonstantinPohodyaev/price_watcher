@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -8,7 +8,6 @@ from src.database.annotations import not_null_str
 from src.database.enums import Marketplace
 from src.models.track import IMAGE_URL_MAX_LENGTH, URL_MAX_LENGTH
 from src.schemas.user import ShortUserRead
-
 
 URL_TITLE = 'URL-адрес товара'
 BASE_TRACK_TITLE = (

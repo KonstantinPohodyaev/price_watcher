@@ -2,12 +2,11 @@ import aiohttp
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.schemas.price_history import PriceHistoryDB, PriceHistoryCreate
-from src.database.db import get_async_session
+from src.api.v1.utils import WILDBBERIES_PRODUCT_CARD_URL
 from src.crud.price_history import price_history_crud
 from src.crud.track import track_crud
-from src.api.v1.utils import WILDBBERIES_PRODUCT_CARD_URL
-
+from src.database.db import get_async_session
+from src.schemas.price_history import PriceHistoryCreate, PriceHistoryDB
 
 MAX_TRACKS_PRICE_HISTORY_LEN = 3
 

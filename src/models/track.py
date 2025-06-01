@@ -2,10 +2,10 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.annotations import int_pk, not_null_str, not_null_decimal
+from src.database.annotations import int_pk, not_null_decimal, not_null_str
 from src.database.enums import Marketplace
 from src.models.base import Base
 

@@ -10,6 +10,9 @@ class JWTBase(BaseModel):
     token_type: TokenType
     user_id: int
 
+    class Config:
+        from_attributes = True
+
 
 class JWTRead(JWTBase):
     pass
