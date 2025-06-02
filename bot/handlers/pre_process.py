@@ -23,28 +23,27 @@ def load_data_for_register_user(handler_func):
     ):
         """
         Декаратор, позволяющий подгружать данные о пользователе.
-        
+
         Срабатывает перед выполнением основного хандлера handler_func.
         """
         if not context.user_data.get('account'):
             context.user_data['account'] = dict()
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                GET_USER_BY_TELEGRAM_ID, json=dict(
+                GET_USER_BY_TELEGRAM_ID,
+                json=dict(
                     telegram_id=update.message.from_user.id
                 )
             ) as response:
                 user_data = await response.json()
-                jwt_token_data = user_data.pop('jwt_token')
-                access_token = fernet.decrypt(
-                    jwt_token_data['access_token']
-                ).decode()
-                jwt_token_data['access_token'] = access_token
-                user_data['jwt_token'] = jwt_token_data
                 if user_data:
+                    jwt_token_data = user_data.pop('jwt_token')
+                    if jwt_token_data:
+                        access_token = fernet.decrypt(
+                            jwt_token_data['access_token']
+                        ).decode()
+                        user_data['jwt_token'] = access_token
                     for field, value in user_data.items():
                         context.user_data['account'][field] = value
-                else:
-                    context.user_data.pop('account')
         return await handler_func(update, context)
     return wrapper

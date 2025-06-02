@@ -181,13 +181,11 @@ async def get_password_for_authorization(
 async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    if not context.user_data.get('account'):
-        context.user_data['account'] = dict()
-    context.user_data['account']['password'] = update.message.text
+    entered_password = update.message.text
     try:
         async with aiohttp.ClientSession() as session:
             if not check_password(
-                context.user_data['account']['password'],
+                entered_password,
                 context.user_data['account']['hashed_password']
             ):
                 await update.message.reply_text(
@@ -195,29 +193,21 @@ async def authorization(
                     'Попробуйте еще раз.'
                 )
                 return 'authorization'
-            if context.user_data['account'].get('jwt_token'):
+            request_body = dict(
+                grant_type='password',
+                username=context.user_data['account']['email'],
+                password=entered_password,
+                scope=''
+            )
+            async with session.post(
+                GET_JWT_TOKEN, data=request_body
+            ) as response:
+                data = await response.json()
+                context.user_data['account']['jwt_token'] = data['access_token']
                 await update.message.reply_text(
-                    'Авторизация уже пройдена!'
+                    'Авторизация выполнена ✅'
                 )
                 return ConversationHandler.END
-            else:
-                request_body = dict(
-                    grant_type='password',
-                    username=context.user_data['account']['email'],
-                    password=context.user_data['account']['password'],
-                    scope=''
-                )
-                async with session.post(
-                    GET_JWT_TOKEN, data=request_body
-                ) as response:
-                    data = await response.json()
-                    context.user_data['account']['jwt_token'] = (
-                        data['access_token']
-                    )
-                    await update.message.reply_text(
-                        'Авторизация выполнена ✅'
-                    )
-                    return ConversationHandler.END
     except Exception as error:
         await update.message.reply_text(
             'Ошибка при получении JWT-токена. Повторите регистрацию.'
@@ -235,17 +225,15 @@ async def get_password_for_delete_account(
     return 'start_delete'
 
 
+@load_data_for_register_user
 async def delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    if not context.user_data.get('account'):
-        context.user_data['account'] = dict()
-    context.user_data['account']['password'] = update.message.text
+    entered_password = update.message.text
     try:
         async with aiohttp.ClientSession() as session:
-            await load_user_data(session, update, context)
             if not check_password(
-                context.user_data['account']['password'],
+                entered_password,
                 context.user_data['account']['hashed_password']
             ):
                 await update.message.reply_text(

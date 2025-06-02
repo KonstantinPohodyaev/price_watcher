@@ -28,7 +28,7 @@ async def load_user_data(
     context: ContextTypes.DEFAULT_TYPE
 ):
     async with session.post(
-        GET_USER_BY_TELEGRAM_ID, json=dict(
+            GET_USER_BY_TELEGRAM_ID, json=dict(
             telegram_id=update.message.from_user.id
         )
     ) as response:
