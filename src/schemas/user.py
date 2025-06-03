@@ -38,3 +38,7 @@ class ShortUserRead(BaseModel):
 
 class CheckTGID(BaseModel):
     telegram_id: int
+
+
+class CheckEmail(BaseModel):
+    email: str

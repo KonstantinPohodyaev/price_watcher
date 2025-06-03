@@ -10,7 +10,7 @@ from bot.endpoints import (GET_JWT_TOKEN, GET_USER_BY_TELEGRAM_ID,
                            REGISTER_USER, USERS_ENDPOINT)
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import check_password, load_user_data
-from bot.handlers.validators import validate_full_name
+from bot.handlers.validators import validate_full_name, check_unique_email
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -36,7 +36,7 @@ __________________
 @load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        if context.user_data['account']:
+        if context.user_data.get('account'):
             await update.message.reply_text(
                 text=(
                     f'Привет, {context.user_data["account"]["name"]}\\! '
@@ -117,6 +117,13 @@ async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    entered_email = update.message.text
+    if await check_unique_email(entered_email):
+        await update.message.reply_text(
+            f'Пользователь с email {entered_email} уже существует.\n'
+            f'Придумайте новый'
+        )
+        return 'email'
     context.user_data['account']['email'] = update.message.text
     await update.message.reply_text(
         'Придумайте пароль: '
@@ -254,6 +261,7 @@ async def delete_account(
                     )
                 )
             ):
+                context.user_data.pop('account')
                 await update.message.reply_text(
                     'Ваш акккаунт удален!'
                     'Вы можете зарегестрироваться снова - /start'
@@ -293,6 +301,9 @@ def handlers_installer(
             ],
             'email': [
                 MessageHandler(MESSAGE_HANDLERS, select_email)
+            ],
+            'password': [
+                MessageHandler(MESSAGE_HANDLERS, select_password)
             ]
         },
         fallbacks=[

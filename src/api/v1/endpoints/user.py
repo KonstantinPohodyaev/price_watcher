@@ -21,7 +21,9 @@ from src.crud.user import user_crud
 from src.database.db import get_async_session
 from src.models.user import User
 from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
-from src.schemas.user import CheckTGID, UserCreate, UserRead, UserUpdate
+from src.schemas.user import (
+    CheckTGID, UserCreate, UserRead, UserUpdate, CheckEmail
+)
 
 router = APIRouter()
 service_router = APIRouter()
@@ -167,6 +169,21 @@ async def check_existence_user_by_telegram_id(
 ):
     user = await user_crud.get_user_by_telegram_id(
         telegram_id_schema.telegram_id, session
+    )
+    return user if user else None
+
+
+@service_router.post(
+    '/check-email',
+    response_model=UserRead | None,
+    status_code=status.HTTP_200_OK
+)
+async def check_existence_user_by_email(
+    email_schema: CheckEmail,
+    session: AsyncSession = Depends(get_async_session)
+):
+    user = await user_crud.get_user_by_email(
+        email_schema.email, session
     )
     return user if user else None
 
