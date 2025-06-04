@@ -9,8 +9,10 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
 from bot.endpoints import (GET_JWT_TOKEN, GET_USER_BY_TELEGRAM_ID,
                            REGISTER_USER, USERS_ENDPOINT)
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import check_password, load_user_data
-from bot.handlers.validators import validate_full_name, check_unique_email
+from bot.handlers.utils import check_password
+from bot.handlers.validators import (
+    validate_full_name, validate_email, validate_password
+)
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -97,17 +99,14 @@ async def start_registration(
     await query.message.reply_text(
         'Укажите Ваше имя и фамилию через пробел: '
     )
-    return 'name_and_surname'
+    return 'full_name'
 
 
 async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not validate_full_name(update.message.text):
-        await update.message.reply_text(
-            'Неверный формат ввода имени и фамилии 🚫\n'
-            'Попробуйте еще раз:'
-        )
-        return 'name_and_surname'
-    name, surname = update.message.text.split()
+    full_name = update.message.text
+    if not await validate_full_name(update, context, full_name):
+        return 'full_name'
+    name, surname = full_name.split()
     context.user_data['account']['name'] = name
     context.user_data['account']['surname'] = surname
     await update.message.reply_text(
@@ -118,11 +117,7 @@ async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     entered_email = update.message.text
-    if await check_unique_email(entered_email):
-        await update.message.reply_text(
-            f'Пользователь с email {entered_email} уже существует.\n'
-            f'Придумайте новый'
-        )
+    if not await validate_email(update, context, entered_email):
         return 'email'
     context.user_data['account']['email'] = update.message.text
     await update.message.reply_text(
@@ -132,7 +127,10 @@ async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['account']['password'] = update.message.text
+    entered_password = update.message.text
+    if not await validate_password(update, context, entered_password):
+        return 'password'
+    context.user_data['account']['password'] = entered_password
     context.user_data['account']['telegram_id'] = update.message.from_user.id
     try:
         async with aiohttp.ClientSession() as session:
@@ -296,7 +294,7 @@ def handlers_installer(
             )
         ],
         states={
-            'name_and_surname': [
+            'full_name': [
                 MessageHandler(MESSAGE_HANDLERS, select_name)
             ],
             'email': [
