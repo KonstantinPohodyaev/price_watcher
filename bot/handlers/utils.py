@@ -10,16 +10,37 @@ from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 password_hasher = PasswordHasher()
 
 
-def check_password(
-    entered_password: str, hashed_user_password: str
+async def check_password(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    entered_password: str,
+    hashed_user_password: str
 ) -> bool:
+    """Проверяет, совпадает ли введенный пароль с БД."""
     try:
         password_hasher.verify(
             hashed_user_password, entered_password
         )
         return True
     except VerifyMismatchError:
+        await update.message.reply_text(
+            'Вы ввели неправильный пароль 🚫\n'
+            'Попробуйте еще раз.'
+        )
         return False
+
+
+async def check_authorization(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    """Проверяет, авторизаван ли пользователь."""
+    if not context.user_data['account'].get('jwt_token'):
+        await update.message.reply_text(
+            'Для удаления аккаунта необходима авторизация'
+        )
+        return False
+    return True
 
 
 async def load_user_data(

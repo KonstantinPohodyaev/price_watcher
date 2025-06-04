@@ -22,9 +22,9 @@ class UserCreate(schemas.BaseUserCreate):
 
 
 class UserUpdate(schemas.BaseUserUpdate):
-    telegram_id: Optional[int]
-    name: Optional[str]
-    surname: Optional[str]
+    telegram_id: Optional[int] = Field(None)
+    name: Optional[str] = Field(None)
+    surname: Optional[str] = Field(None)
 
 
 class ShortUserRead(BaseModel):
