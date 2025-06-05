@@ -13,8 +13,8 @@ from bot.handlers.utils import check_password, check_authorization
 from bot.handlers.validators import (
     validate_full_name, validate_email, validate_password
 )
+from bot.handlers.constants import MESSAGE_HANDLERS
 
-MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
 ACCOUNT_INFO = """
 Настройки аккаунта

@@ -13,6 +13,7 @@ from bot.handlers.utils import check_password
 from bot.handlers.validators import (
     validate_full_name, validate_email, validate_password
 )
+from bot.handlers.constants import PARSE_MODE
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -53,7 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=START_MESSAGE.format(
                     name=update.message.from_user.username
                 ),
-                parse_mode='HTML',
+                parse_mode=PARSE_MODE,
                 reply_markup=keyboard
             )
         else:
@@ -77,7 +78,7 @@ async def info(
 ):
     await update.message.reply_text(
         text=INFO,
-        parse_mode='HTML'
+        parse_mode=PARSE_MODE
     )
 
 

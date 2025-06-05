@@ -1,3 +1,4 @@
+from decimal import Decimal
 import re
 
 import aiohttp
@@ -120,3 +121,13 @@ async def validate_password(
         )
         return False
     return True
+
+
+# async def validate_price(
+#     update: Update,
+#     context: ContextTypes.DEFAULT_TYPE,
+#     price: str
+# ) -> bool:
+#     price = Decimal(price)
+#     if price < Decimal('0'):
+#         await 
