@@ -8,3 +8,5 @@ REGISTER_USER = f'{PROTOCOL}://{DOMEN}/auth/register'
 GET_JWT_TOKEN = f'{PROTOCOL}://{DOMEN}/auth/jwt/login'
 USERS_ENDPOINT = f'{PROTOCOL}://{DOMEN}/users'
 USERS_GET_ME = f'{PROTOCOL}://{DOMEN}/users/me'
+
+GET_USERS_TRACKS = f'{PROTOCOL}://{DOMEN}/tracks'

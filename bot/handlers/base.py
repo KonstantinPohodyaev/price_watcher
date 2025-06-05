@@ -17,8 +17,8 @@ from bot.handlers.validators import (
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
 INFO = """
-Проект Price Watcher
-_______________
+<u>Проект Price Watcher</u>
+_____________________________
 здесь вы можете отслеживать цены по интересующим вас товарам
 на популярных маркетплейсах и получать уведомления,
 если цена упала до желаемой!
@@ -27,33 +27,48 @@ _______________
 /account_info - настройки аккаунта
 """
 
+START_MESSAGE = (
+    '<b>Привет</b>, <code>{name}</code>! '
+    'Чем я тебе могу помочь? 👋\n'
+    '/info - информация о боте\n'
+    '/auth - пройти авторизацию\n'
+)
+
 
 @load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         if context.user_data.get('account'):
+            keyboard = None
+            if context.user_data['account'].get('jwt_token'):
+                buttons = [
+                    [
+                        InlineKeyboardButton(
+                            'Мои товары 📦', callback_data='track_show_all'
+                        )
+                    ]
+                ]
+                keyboard = InlineKeyboardMarkup(buttons)
             await update.message.reply_text(
-                text=(
-                    f'Привет, {context.user_data["account"]["name"]}\\! '
-                    f'Чем я тебе могу помочь\\? 👋\n'
-                    f'/info \\- информация о боте\n'
-                    f'/auth \\- пройти авторизацию\n'
+                text=START_MESSAGE.format(
+                    name=update.message.from_user.username
                 ),
-                parse_mode='MarkdownV2'
+                parse_mode='HTML',
+                reply_markup=keyboard
             )
         else:
             button = InlineKeyboardButton(
-                'Начать регистрацию',
+                'Начать регистрацию 🔥',
                 callback_data='start_registration'
             )
             keyboard = InlineKeyboardMarkup([[button]])
             await update.message.reply_text(
-                'Вы не зарегестрированы!',
+                'Вы не зарегестрированы! 🚨',
                 reply_markup=keyboard
             )
     except Exception as error:
         await update.message.reply_text(
-            'К сожалению возникла ошибка при аутентификации! ❌'
+            'К сожалению возникла ошибка при запуске бота! ❌'
         )
         print(str(error))
 
@@ -61,7 +76,8 @@ async def info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     await update.message.reply_text(
-        INFO
+        text=INFO,
+        parse_mode='HTML'
     )
 
 

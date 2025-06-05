@@ -26,13 +26,19 @@ def load_data_for_register_user(handler_func):
 
         Срабатывает перед выполнением основного хандлера handler_func.
         """
+        if update.callback_query:
+            query = update.callback_query
+            await query.answer()
+            config = query
+        else:
+            config = update
         if not context.user_data.get('account'):
             context.user_data['account'] = dict()
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GET_USER_BY_TELEGRAM_ID,
                 json=dict(
-                    telegram_id=update.message.from_user.id
+                    telegram_id=config.message.from_user.id
                 )
             ) as response:
                 user_data = await response.json()

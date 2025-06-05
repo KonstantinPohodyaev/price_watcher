@@ -1,4 +1,5 @@
-import aiohttp
+import re
+
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -8,6 +9,24 @@ from telegram.ext import ContextTypes
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 
 password_hasher = PasswordHasher()
+
+
+def catch_error(error_message: str):
+    def decorator(handler):
+        async def wrapper(
+            update: Update,
+            context: ContextTypes.DEFAULT_TYPE,
+            *args, **kwargs
+        ):
+            try:
+                return await handler(update, context, *args, **kwargs)
+            except Exception as error:
+                query = update.callback_query
+                await query.answer()
+                await query.message.reply_text(error_message)
+                print(str(error))
+        return wrapper
+    return decorator
 
 
 async def check_password(
@@ -37,7 +56,7 @@ async def check_authorization(
     """Проверяет, авторизаван ли пользователь."""
     if not context.user_data['account'].get('jwt_token'):
         await update.message.reply_text(
-            'Для удаления аккаунта необходима авторизация'
+            'Для совершения этой операции необходима авторизация ⚠️'
         )
         return False
     return True
@@ -57,3 +76,10 @@ async def load_user_data(
         if user_data:
             for field, value in user_data.items():
                 context.user_data['account'][field] = value
+
+
+def escape_markdown_v2(text: str) -> str:
+    """
+    Экранирует спецсимволы MarkdownV2, чтобы избежать ошибок Telegram.
+    """
+    return re.sub(r'([\\_*[\]()~`>#+\-=|{}.!])', r'\\\1', text)
