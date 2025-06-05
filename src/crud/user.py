@@ -21,5 +21,19 @@ class UserCRUD(CRUDBase[User, UserCreate, UserUpdate]):
             )
         ).scalar()
 
+    async def get_user_by_email(
+        self,
+        email: str,
+        session: AsyncSession
+    ):
+        """Получение пользователя по его email."""
+        return (
+            await session.execute(
+                select(self.model).where(
+                    self.model.email == email
+                )
+            )
+        ).scalar()
+
 
 user_crud = UserCRUD(User)

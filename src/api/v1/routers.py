@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from src.api.v1.endpoints import track_router, user_router, price_history_router
+from src.api.v1.endpoints import (price_history_router, track_router,
+                                  user_router)
 
 TRACK_TAGS = ['track']
 PRICE_HISTORY_TAGS = ['price_history']

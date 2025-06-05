@@ -1,21 +1,19 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.v1.validators import (
-    check_track_exists_by_id, check_unique_track_by_marketplace_article,
-    not_negative_target_price
-)
-from src.api.v1.utils import wildberries_parse, get_wildberries_product_data
+from src.api.v1.utils import get_wildberries_product_data, wildberries_parse
+from src.api.v1.validators import (check_track_exists_by_id,
+                                   check_unique_track_by_marketplace_article,
+                                   not_negative_target_price)
+from src.core.user import current_user
+from src.crud.price_history import price_history_crud
 from src.crud.track import track_crud
 from src.database.db import get_async_session
 from src.database.enums import Marketplace
-from src.schemas.track import (TrackUserDataCreate, TrackDB, TrackFilterSchema,
-                               TrackUpdate, TrackDBCreate)
-from src.schemas.price_history import PriceHistoryCreate
-from src.crud.price_history import price_history_crud
-from src.core.user import current_user
 from src.models.user import User
-
+from src.schemas.price_history import PriceHistoryCreate
+from src.schemas.track import (TrackDB, TrackDBCreate, TrackFilterSchema,
+                               TrackUpdate, TrackUserDataCreate)
 
 COMPARE_RESPONSE_MODEL = dict(status=False)
 
