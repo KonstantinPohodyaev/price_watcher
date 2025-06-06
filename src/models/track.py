@@ -50,5 +50,6 @@ class Track(Base):
     price_history: Mapped[list['PriceHistory']] = relationship(
         'PriceHistory',
         back_populates='track',
-        lazy='selectin'
+        lazy='selectin',
+        cascade="all, delete-orphan"
     )

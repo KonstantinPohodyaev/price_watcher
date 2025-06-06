@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 05a076123442
+Revision ID: 62995a536309
 Revises: 
-Create Date: 2025-05-31 00:04:27.201295
+Create Date: 2025-06-06 23:22:26.326206
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '05a076123442'
+revision: str = '62995a536309'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -37,6 +37,19 @@ def upgrade() -> None:
     sa.UniqueConstraint('telegram_id')
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
+    op.create_table('jwttoken',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('access_token', sa.String(), nullable=False),
+    sa.Column('token_type', sa.Enum('BEARER', name='tokentype'), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('access_token'),
+    sa.UniqueConstraint('id'),
+    sa.UniqueConstraint('user_id')
+    )
     op.create_table('track',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('marketplace', sa.Enum('WILDBERRIES', 'OZON', name='marketplace'), nullable=False),
@@ -60,7 +73,7 @@ def upgrade() -> None:
     sa.Column('track_id', sa.Integer(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.ForeignKeyConstraint(['track_id'], ['track.id'], ),
+    sa.ForeignKeyConstraint(['track_id'], ['track.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id')
     )
@@ -82,6 +95,7 @@ def downgrade() -> None:
     op.drop_table('user_track')
     op.drop_table('pricehistory')
     op.drop_table('track')
+    op.drop_table('jwttoken')
     op.drop_index(op.f('ix_user_email'), table_name='user')
     op.drop_table('user')
     # ### end Alembic commands ###

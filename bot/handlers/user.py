@@ -7,10 +7,12 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           MessageHandler, filters)
 
 from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
-                           USERS_GET_ME)
+                           USERS_GET_ME, USERS_ME_REFRESH)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import check_authorization, check_password
+from bot.handlers.utils import (
+    check_authorization, check_password, get_headers
+)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
 
@@ -163,9 +165,23 @@ async def authorization(
             ) as response:
                 data = await response.json()
                 context.user_data['account']['jwt_token'] = data['access_token']
-                await update.message.reply_text(
-                    'Авторизация выполнена ✅'
+            async with session.patch(
+                USERS_ME_REFRESH,
+                headers=get_headers(context),
+                json=dict(
+                    jwt_token=dict(
+                        access_token=context.user_data['account']['jwt_token']
+                    )
                 )
+            ) as response:
+                if response.status == 200:
+                    await update.message.reply_text(
+                        'Авторизация выполнена ✅'
+                    )
+                    return ConversationHandler.END
+                await update.message.reply_text(
+                        'Ошибка при сохранении новго токена в БД 🚫'
+                    )
                 return ConversationHandler.END
     except Exception as error:
         await update.message.reply_text(

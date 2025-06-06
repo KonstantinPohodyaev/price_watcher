@@ -43,7 +43,8 @@ class User(Base, SQLAlchemyBaseUserTable):
     tracks: Mapped[list['Track']] = relationship(
         'Track',
         back_populates='user',
-        lazy='selectin'
+        lazy='selectin',
+        cascade="all, delete-orphan"
     )
     is_verified: Mapped[bool] = mapped_column(
         nullable=False, default=True

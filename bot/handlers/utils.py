@@ -90,3 +90,13 @@ async def get_interaction(update: Update) -> Update | CallbackQuery:
     if isinstance(interaction, CallbackQuery):
         await interaction.answer()
     return interaction
+
+
+def get_headers(
+    context: ContextTypes.DEFAULT_TYPE
+) -> dict[str, str]:
+    return dict(
+        Authorization=(
+            f'Bearer {context.user_data["account"]["jwt_token"]}'
+        )
+    )
