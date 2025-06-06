@@ -63,18 +63,15 @@ class JWTCRUD:
         commit_on: bool = True
     ):
         """Обновляет данные JWT-токена."""
-        current_jwt_token_data = jsonable_encoder(
-            current_jwt_token.to_dict()
-        )
-        update_data = update_schema.model_dump()
+        update_data = update_schema.model_dump(exclude_unset=True)
         if update_data.get('access_token'):
             new_encoded_access_token = fernet.encrypt(
                 update_data.get('access_token').encode()
             )
             update_data['access_token'] = new_encoded_access_token
-        for field in current_jwt_token_data:
+        for field, value in update_data.items():
             if field in update_data:
-                setattr(current_jwt_token, field, update_data[field])
+                setattr(current_jwt_token, field, value)
         try:
             session.add(current_jwt_token)
             if commit_on:

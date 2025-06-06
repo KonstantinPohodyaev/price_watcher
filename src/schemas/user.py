@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi_users import schemas
 from pydantic import BaseModel, Field
 
-from src.schemas.jwt_auth import JWTRead
+from src.schemas.jwt_auth import JWTRead, JWTTokenUpdate
 
 
 class UserRead(schemas.BaseUser[int]):
@@ -25,6 +25,7 @@ class UserUpdate(schemas.BaseUserUpdate):
     telegram_id: Optional[int] = Field(None)
     name: Optional[str] = Field(None)
     surname: Optional[str] = Field(None)
+    jwt_token: Optional[JWTTokenUpdate] = Field(None)
 
 
 class ShortUserRead(BaseModel):

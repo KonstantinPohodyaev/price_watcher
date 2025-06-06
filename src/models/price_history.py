@@ -19,7 +19,7 @@ class PriceHistory(Base):
         nullable=False
     )
     track_id: Mapped[int] = mapped_column(
-        ForeignKey('track.id')
+        ForeignKey('track.id', ondelete='CASCADE')
     )
     track: Mapped['Track'] = relationship(
         'Track',
