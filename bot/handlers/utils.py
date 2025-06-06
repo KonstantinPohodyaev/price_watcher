@@ -3,7 +3,7 @@ import re
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from telegram import Update, Message, CallbackQuery
+from telegram import CallbackQuery, Message, Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID

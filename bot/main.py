@@ -3,10 +3,8 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder
 
-from bot.handlers import (
-    base_installer_handlers, user_installer_handlers,
-    track_handler_installer
-)
+from bot.handlers import (base_installer_handlers, track_handler_installer,
+                          user_installer_handlers)
 
 load_dotenv()
 

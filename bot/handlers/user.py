@@ -6,15 +6,13 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (GET_JWT_TOKEN, USERS_GET_ME,
-                           REGISTER_USER, USERS_ENDPOINT)
-from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import check_password, check_authorization
-from bot.handlers.validators import (
-    validate_full_name, validate_email, validate_password
-)
+from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
+                           USERS_GET_ME)
 from bot.handlers.constants import MESSAGE_HANDLERS
-
+from bot.handlers.pre_process import load_data_for_register_user
+from bot.handlers.utils import check_authorization, check_password
+from bot.handlers.validators import (validate_email, validate_full_name,
+                                     validate_password)
 
 ACCOUNT_INFO = """
 Настройки аккаунта

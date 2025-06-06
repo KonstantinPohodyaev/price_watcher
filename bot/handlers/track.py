@@ -1,17 +1,14 @@
 import aiohttp
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ContextTypes, ApplicationBuilder, InlineQueryHandler,
-    CallbackQueryHandler, ConversationHandler, MessageHandler
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
+                          ContextTypes, ConversationHandler,
+                          InlineQueryHandler, MessageHandler)
 
-from bot.handlers.utils import catch_error
-from bot.handlers.pre_process import load_data_for_register_user
 from bot.endpoints import USERS_TRACKS, USERS_TRACKS_BY_ID
-from bot.handlers.utils import check_authorization
-from bot.handlers.constants import PARSE_MODE, MESSAGE_HANDLERS
+from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
+from bot.handlers.pre_process import load_data_for_register_user
+from bot.handlers.utils import catch_error, check_authorization
 from bot.handlers.validators import validate_price
-
 
 SHOW_ALL_ERROR = (
     'Что-то пошло не так при загрузке отслеживаемых товаров! ❌\n'

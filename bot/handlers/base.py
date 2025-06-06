@@ -1,9 +1,9 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (ApplicationBuilder,
-                          CommandHandler, ContextTypes, filters)
+from telegram.ext import (ApplicationBuilder, CommandHandler, ContextTypes,
+                          filters)
 
-from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.constants import PARSE_MODE
+from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import catch_error
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND

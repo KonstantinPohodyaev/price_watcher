@@ -1,13 +1,12 @@
-from decimal import Decimal, InvalidOperation
 import re
+from decimal import Decimal, InvalidOperation
 
 import aiohttp
-from telegram import Update, CallbackQuery
+from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_EMAIL
 from bot.handlers.utils import get_interaction
-
 
 VALIDATE_FULL_NAME_PATTERN = r'^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
 FULL_NAME_PATTERN_ERROR = (

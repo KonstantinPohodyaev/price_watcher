@@ -7,7 +7,6 @@ from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 
-
 fernet = Fernet(
     os.getenv(
         'JWT_SECRET_KEY',
