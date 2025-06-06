@@ -3,7 +3,7 @@ import re
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from telegram import Update
+from telegram import Update, Message, CallbackQuery
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
@@ -21,9 +21,8 @@ def catch_error(error_message: str):
             try:
                 return await handler(update, context, *args, **kwargs)
             except Exception as error:
-                query = update.callback_query
-                await query.answer()
-                await query.message.reply_text(error_message)
+                interaction = await get_interaction(update)
+                await interaction.message.reply_text(error_message)
                 print(str(error))
         return wrapper
     return decorator
@@ -83,3 +82,11 @@ def escape_markdown_v2(text: str) -> str:
     Экранирует спецсимволы MarkdownV2, чтобы избежать ошибок Telegram.
     """
     return re.sub(r'([\\_*[\]()~`>#+\-=|{}.!])', r'\\\1', text)
+
+
+async def get_interaction(update: Update) -> Update | CallbackQuery:
+    """Функция для определения действия с пользователем."""
+    interaction = update or update.callback_data
+    if isinstance(interaction, CallbackQuery):
+        await interaction.answer()
+    return interaction

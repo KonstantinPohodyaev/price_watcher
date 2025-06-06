@@ -1,11 +1,12 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import re
 
 import aiohttp
-from telegram import Update
+from telegram import Update, CallbackQuery
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_EMAIL
+from bot.handlers.utils import get_interaction
 
 
 VALIDATE_FULL_NAME_PATTERN = r'^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
@@ -40,6 +41,16 @@ WRONG_PASSWORD_PATTERN_ERROR = (
 )
 
 VALIDATE_FULL_NAME_ERROR = 'Недопустимый формат ввода имени и фамилии.'
+
+PRICE_PATTERN = r'^\d+(\.\d{1,2})?$'
+PRICE_PATTERN_ERROR = (
+    'Цена содержит недопустимые символы!\n'
+    'Введите ещё раз!'
+)
+PRICE_VALUE_ERROR = (
+    'Цена не может быть меньше 0!\n'
+    'Введите ещё раз!'
+)
 
 
 async def validate_full_name(
@@ -123,11 +134,21 @@ async def validate_password(
     return True
 
 
-# async def validate_price(
-#     update: Update,
-#     context: ContextTypes.DEFAULT_TYPE,
-#     price: str
-# ) -> bool:
-#     price = Decimal(price)
-#     if price < Decimal('0'):
-#         await 
+async def validate_price(
+    interaction: Update | CallbackQuery,
+    context: ContextTypes.DEFAULT_TYPE,
+    price: str
+) -> bool:
+    """Валидатор для цены"""
+    str_price = price.strip().replace(',', '.')
+    if not re.match(PRICE_PATTERN, str_price):
+        await interaction.message.reply_text(
+            WRONG_PASSWORD_PATTERN_ERROR
+        )
+        return False
+    elif Decimal(str_price) < 0:
+        await interaction.message.reply_text(
+            PRICE_VALUE_ERROR
+        )
+        return False
+    return str_price
