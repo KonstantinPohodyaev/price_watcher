@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 
-from fastapi_users.db import SQLAlchemyBaseUserTable
+from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
 
 if TYPE_CHECKING:
+    from src.models.jwt_auth import JWTToken
     from src.models.track import Track
 
 NAME_MAX_LENGTH = 128
@@ -46,4 +47,11 @@ class User(Base, SQLAlchemyBaseUserTable):
     )
     is_verified: Mapped[bool] = mapped_column(
         nullable=False, default=True
+    )
+    jwt_token: Mapped['JWTToken'] = relationship(
+        'JWTToken',
+        back_populates='user',
+        uselist=False,
+        lazy='selectin',
+        cascade='all, delete-orphan'
     )

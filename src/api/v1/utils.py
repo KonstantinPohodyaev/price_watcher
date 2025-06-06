@@ -5,9 +5,9 @@ from typing import Union
 
 import aiohttp
 
-from src.schemas.track import TrackUserDataCreate, TrackDBCreate, TrackUpdate
 from src.api.v1.constants import WILDBBERIES_PRODUCT_CARD_URL
 from src.api.v1.validators import check_not_existent_article
+from src.schemas.track import TrackDBCreate, TrackUpdate, TrackUserDataCreate
 
 
 async def wildberries_parse(article: str) -> dict:
