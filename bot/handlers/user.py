@@ -10,9 +10,7 @@ from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
                            USERS_GET_ME, USERS_ME_REFRESH)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import (
-    check_authorization, check_password, get_headers
-)
+from bot.handlers.utils import check_authorization, check_password, get_headers
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
 

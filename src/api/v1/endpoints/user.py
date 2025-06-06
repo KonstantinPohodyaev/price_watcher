@@ -2,7 +2,7 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_users import models, schemas, exceptions
+from fastapi_users import exceptions, models, schemas
 from fastapi_users.authentication.strategy import Strategy
 from fastapi_users.manager import BaseUserManager
 from fastapi_users.openapi import OpenAPIResponseType
@@ -21,10 +21,8 @@ from src.crud.user import user_crud
 from src.database.db import get_async_session
 from src.models.user import User
 from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
-from src.schemas.user import (
-    CheckTGID, UserCreate, UserRead, UserUpdate, CheckEmail
-)
-from src.core.user import current_superuser, current_user
+from src.schemas.user import (CheckEmail, CheckTGID, UserCreate, UserRead,
+                              UserUpdate)
 
 router = APIRouter()
 service_router = APIRouter()
