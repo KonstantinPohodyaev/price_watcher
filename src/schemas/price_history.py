@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -32,6 +33,7 @@ class BasePriceHistory(BaseModel):
 
 class PriceHistoryDB(BasePriceHistory):
     """Схема для отображения PriceHistory в БД."""
+    created_at: datetime
 
     class Config:
         title = PRICE_HISTORY_DB
