@@ -10,9 +10,23 @@ from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
                            USERS_GET_ME, USERS_ME_REFRESH)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import check_authorization, check_password, get_headers
+from bot.handlers.utils import (
+    check_authorization, check_password, get_headers,
+    get_interaction
+)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
+
+# Состояния для ConversationHandler
+
+REGISTRATION_FULL_NAME = 'full_name'
+REGISTRATION_EMAIL = 'email'
+REGISTRATION_PASSWORD = 'password'
+
+AUTH_AUTHORIZATION = 'auth'
+
+
+
 
 ACCOUNT_INFO = """
 Настройки аккаунта
@@ -26,8 +40,17 @@ __________________
 async def account_info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    await update.message.reply_text(
-        ACCOUNT_INFO
+    interaction = await get_interaction(update)
+    buttons = [
+        [
+            InlineKeyboardButton(
+                'Меню', callback_data='base_menu'
+            )
+        ]
+    ]
+    await interaction.message.reply_text(
+        ACCOUNT_INFO,
+        reply_markup=buttons
     )
 
 
@@ -35,6 +58,7 @@ async def account_info(
 async def check_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    # buttons = 
     await update.message.reply_text(
         text=f'```{context.user_data["account"]}```',
         parse_mode='MarkdownV2'
@@ -169,8 +193,16 @@ async def authorization(
                 )
             ) as response:
                 if response.status == 200:
+                    buttons = [
+                        [
+                            InlineKeyboardButton(
+                                'Меню', callback_data='base_menu'
+                            )
+                        ]
+                    ]
                     await update.message.reply_text(
-                        'Авторизация выполнена ✅'
+                        'Авторизация выполнена ✅',
+                        reply_markup=InlineKeyboardMarkup(buttons)
                     )
                     return ConversationHandler.END
                 await update.message.reply_text(
@@ -386,7 +418,7 @@ async def finish_edit(
         async with aiohttp.ClientSession() as session:
             print(context.user_data['edit_account'])
             async with session.patch(
-                USERS_GET_ME,
+                USERS_ME_REFRESH,
                 headers=dict(
                     Authorization=(
                         f'Bearer {context.user_data["account"]["jwt_token"]}'
@@ -395,9 +427,19 @@ async def finish_edit(
                 json=context.user_data['edit_account']
             ) as response:
                 new_user_data = await response.json()
+                buttons=[
+                    [
+                        InlineKeyboardButton(
+                            'Назад', callback_data='account_info'
+                        )
+                    ]
+                ]
                 await query.message.reply_text(
-                    f'Данные обновлены ✅'
-                    f'```python{new_user_data}```'
+                    f'Данные обновлены ✅\n'
+                    f'```python{new_user_data}```',
+                    reply_markup=InlineKeyboardMarkup(
+                        buttons
+                    )
                 )
                 return ConversationHandler.END
     except Exception as error:
@@ -412,7 +454,16 @@ def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
     application.add_handler(
+        MessageHandler(
+            filters.TEXT & filters.Regex('^Ваш аккаунт 📱$'),
+            account_info
+        )
+    )
+    application.add_handler(
         CommandHandler('account_info', account_info)
+    )
+    application.add_handler(
+        CallbackQueryHandler(account_info, pattern='^account_info$')
     )
     application.add_handler(
         CommandHandler('account_data', check_account_data)
@@ -424,13 +475,13 @@ def handlers_installer(
             )
         ],
         states={
-            'full_name': [
+            REGISTRATION_FULL_NAME: [
                 MessageHandler(MESSAGE_HANDLERS, select_name)
             ],
-            'email': [
+            REGISTRATION_EMAIL: [
                 MessageHandler(MESSAGE_HANDLERS, select_email)
             ],
-            'password': [
+            REGISTRATION_PASSWORD: [
                 MessageHandler(MESSAGE_HANDLERS, select_password)
             ]
         },
@@ -446,9 +497,13 @@ def handlers_installer(
             CommandHandler(
                 'auth', get_password_for_authorization
             ),
+            MessageHandler(
+                filters.TEXT & filters.Regex('^Авторизация 🔐$'),
+                get_password_for_authorization
+            )
         ],
         states={
-            'authorization': [
+            AUTH_AUTHORIZATION: [
                 MessageHandler(MESSAGE_HANDLERS, authorization)
             ],
             'get_password': [

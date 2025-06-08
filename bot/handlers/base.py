@@ -1,6 +1,8 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup
+)
 from telegram.ext import (ApplicationBuilder, CommandHandler, ContextTypes,
-                          filters)
+                          filters, CallbackQueryHandler)
 
 from bot.handlers.constants import PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
@@ -17,48 +19,58 @@ _____________________________
 на популярных маркетплейсах и получать уведомления,
 если цена упала до желаемой!
 /start - запуск бота
-/info - информация о боте
+/auth - пройти авторизацию'
 /account_info - настройки аккаунта
 """
 
-START_MESSAGE = (
-    '<b>Привет</b>, <code>{name}</code>! '
-    'Чем я тебе могу помочь? 👋\n'
-    '/info - информация о боте\n'
-    '/auth - пройти авторизацию\n'
-)
+START_MESSAGE = """
+<b>Привет</b>, <code>{name}</code>!
+Чем я тебе могу помочь? 👋
+/info - информация о боте
+"""
+
+MAIN_REPLY_BUTTONS = ['Старт 🔥', 'Авторизация 🔐', 'Ваш аккаунт 📱']
 
 
 @load_data_for_register_user
 @catch_error(START_ERROR)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    main_keyboard = ReplyKeyboardMarkup(
+        [MAIN_REPLY_BUTTONS],
+        resize_keyboard=True
+    )
     if context.user_data.get('account'):
-        keyboard = None
         if context.user_data['account'].get('jwt_token'):
             buttons = [
                 [
                     InlineKeyboardButton(
-                        'Мои товары 📦', callback_data='track_show_all'
+                        'Меню 📦', callback_data='base_menu'
                     )
                 ]
             ]
-            keyboard = InlineKeyboardMarkup(buttons)
         await update.message.reply_text(
             text=START_MESSAGE.format(
                 name=update.message.from_user.username
             ),
             parse_mode=PARSE_MODE,
-            reply_markup=keyboard
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        await update.message.reply_text(
+            'Загрузка...',
+            reply_markup=main_keyboard
         )
     else:
-        button = InlineKeyboardButton(
-            'Начать регистрацию 🔥',
-            callback_data='start_registration'
-        )
-        keyboard = InlineKeyboardMarkup([[button]])
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    'Начать регистрацию 🔥',
+                    callback_data='start_registration'
+                )
+            ]
+        ]
         await update.message.reply_text(
             'Вы не зарегестрированы! 🚨',
-            reply_markup=keyboard
+            reply_markup=InlineKeyboardMarkup(buttons)
         )
 
 
@@ -71,6 +83,26 @@ async def info(
     )
 
 
+async def menu(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    query = update.callback_query
+    await query.answer()
+    buttons = [
+        [
+            InlineKeyboardButton(
+                'Мои товары 📦',
+                callback_data='track_show_all'
+            )
+        ],
+        
+    ]
+    await query.message.reply_text(
+        'Выберите интересующий вас пункт',
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+
 def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
@@ -79,4 +111,7 @@ def handlers_installer(
     )
     application.add_handler(
         CommandHandler('info', info)
+    )
+    application.add_handler(
+        CallbackQueryHandler(menu, pattern='^base_menu$')
     )

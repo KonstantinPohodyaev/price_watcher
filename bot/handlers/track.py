@@ -97,6 +97,12 @@ async def show_all(
                         'Отследить товар 🔍',
                         callback_data='track_add_track'
                     )
+                ],
+                [
+                    InlineKeyboardButton(
+                        'Меню 🛍️',
+                        callback_data='base_menu'
+                    )
                 ]
             ]
             tracks = await response.json()
@@ -235,7 +241,24 @@ async def create_new_track(
             json=context.user_data['new_track']
         ) as response:
             new_track = await response.json()
-            print(new_track)
+            TRACK_BUTTONS = [
+                [
+                    InlineKeyboardButton(
+                        'Изменить ⚡',
+                        callback_data=f'track_target_price_refresh_{new_track["id"]}'
+                    ),
+                    InlineKeyboardButton(
+                        'Удалить ❌',
+                        callback_data=f'track_delete_{new_track["id"]}'
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        'Посмотреть историю 🛍️',
+                        callback_data=f'track_check_history_{new_track["id"]}'
+                    )
+                ]
+            ]
             await update.message.reply_text(
                 SUCCESS_CREATE_TRACK_MESSAGE
             )
@@ -248,7 +271,8 @@ async def create_new_track(
                     created_at=new_track['created_at'],
                     last_checked_at=new_track['last_checked_at']
                 ),
-                parse_mode=PARSE_MODE
+                parse_mode=PARSE_MODE,
+                reply_markup=InlineKeyboardMarkup(TRACK_BUTTONS)
             )
             return ConversationHandler.END
 
