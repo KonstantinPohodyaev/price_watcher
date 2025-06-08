@@ -55,7 +55,7 @@ async def check_authorization(
     """Проверяет, авторизаван ли пользователь."""
     if not context.user_data['account'].get('jwt_token'):
         await update.message.reply_text(
-            'Для совершения этой операции необходима авторизация ⚠️'
+            'Для совершения этой операции необходима авторизация /auth ⚠️'
         )
         return False
     return True
@@ -86,10 +86,12 @@ def escape_markdown_v2(text: str) -> str:
 
 async def get_interaction(update: Update) -> Update | CallbackQuery:
     """Функция для определения действия с пользователем."""
-    interaction = update or update.callback_data
-    if isinstance(interaction, CallbackQuery):
-        await interaction.answer()
-    return interaction
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        return query
+    elif update.message:
+        return update
 
 
 def get_headers(

@@ -51,6 +51,13 @@ PRICE_VALUE_ERROR = (
     'Введите ещё раз!'
 )
 
+MARKETPLACES = ['wildberries', 'ozon']
+MARKETPLACE_NOT_ALLOWED_ERROR = (
+    'К сожалению Ваш маркетплэйс {current_marketplace} мы обработать '
+    'не можем 😱\n'
+    'Выберите'
+)
+
 
 async def validate_full_name(
     update: Update,
@@ -151,3 +158,14 @@ async def validate_price(
         )
         return False
     return str_price
+
+
+async def validate_marketplace(
+    interaction: Update | CallbackQuery,
+    context: ContextTypes.DEFAULT_TYPE,
+    marketplace: str
+) -> bool:
+    if not marketplace in MARKETPLACES:
+        await interaction.message.reply_text(
+            
+        )

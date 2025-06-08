@@ -54,8 +54,6 @@ class TargetAndCurrentPriceFields(BaseModel):
             return Decimal(DECIMAL_ZERO)
 
 
-
-
 class BaseTrack(TargetAndCurrentPriceFields):
     """Базовая схема для модели PriceHistory."""
     marketplace: Optional[Marketplace] = Field(None)
@@ -75,6 +73,7 @@ class TrackDB(BaseTrack):
     """Схема для отображения PriceHistory в БД."""
     id: Optional[int]
     user: ShortUserRead
+    created_at: datetime
 
     class Config:
         title = TRACK_DB_TITLE
