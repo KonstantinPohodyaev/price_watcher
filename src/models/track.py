@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.annotations import int_pk, not_null_decimal, not_null_str
@@ -34,13 +34,15 @@ class Track(Base):
     target_price: Mapped[not_null_decimal]
     current_price: Mapped[not_null_decimal]
     last_checked_at: Mapped[datetime] = mapped_column(
-        nullable=True
+        nullable=True, default=func.now()
     )
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
     user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE')
+        ForeignKey(
+            'user.id', ondelete='CASCADE'
+        )
     )
     user: Mapped['User'] = relationship(
         'User',

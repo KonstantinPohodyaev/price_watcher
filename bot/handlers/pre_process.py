@@ -52,3 +52,9 @@ def load_data_for_register_user(handler_func):
                         context.user_data['account'][field] = value
         return await handler_func(update, context)
     return wrapper
+
+
+def check_auth(handler_func):
+    async def wrapper(update, context):
+        """Проверка пользователя на аутентификацию."""
+        pass

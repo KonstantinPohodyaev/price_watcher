@@ -147,10 +147,6 @@ async def authorization(
                 entered_password,
                 context.user_data['account']['hashed_password']
             ):
-                await update.message.reply_text(
-                    'Вы ввели неправильный пароль 🚫\n'
-                    'Попробуйте еще раз.'
-                )
                 return 'authorization'
             request_body = dict(
                 grant_type='password',

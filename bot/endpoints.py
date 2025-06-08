@@ -12,3 +12,4 @@ USERS_ME_REFRESH = f'{PROTOCOL}://{DOMEN}/users/me/refresh'
 
 USERS_TRACKS = f'{PROTOCOL}://{DOMEN}/tracks'
 USERS_TRACKS_BY_ID = f'{PROTOCOL}://{DOMEN}/tracks/{{id}}'
+CREATE_NEW_TRACK = f'{PROTOCOL}://{DOMEN}/tracks'
