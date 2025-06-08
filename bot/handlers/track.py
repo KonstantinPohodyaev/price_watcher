@@ -1,4 +1,6 @@
 import aiohttp
+from http import HTTPStatus
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           ContextTypes, ConversationHandler,
@@ -12,6 +14,19 @@ from bot.handlers.utils import (
 )
 from bot.handlers.validators import validate_price
 from bot.endpoints import CREATE_NEW_TRACK
+from bot.handlers.callback_data import (
+    MENU, REFRESH_TARGET_PRICE, DELETE_TRACK, CHECK_HISTORY, ADD_TRACK,
+    WILDBERRIES, OZON, SHOW_ALL_TRACK
+)
+
+
+# Состояния для ConversationHandler
+TARGET_PRICE_REFRESH_TARGET_PRICE = 'refresh_target_price'
+
+ADD_TRACK_ADD_ARTICLE = 'add_article'
+ADD_TRACK_ADD_TARGET_PRICE = 'add_target_price'
+ADD_TRACK_CREATE_NEW_TRACK = 'create_new_track'
+
 
 
 SHOW_ALL_ERROR = (
@@ -53,25 +68,6 @@ _________________________
 Дата последней проверки: <b>{last_checked_at}</b>
 """
 
-TRACK_BUTTONS = [
-    [
-        InlineKeyboardButton(
-            'Изменить ⚡',
-            callback_data='track_target_price_refresh'
-        ),
-        InlineKeyboardButton(
-            'Удалить ❌',
-            callback_data='track_delete'
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            'Посмотреть историю 🛍️',
-            callback_data='track_check_history'
-        )
-    ]
-]
-
 
 @load_data_for_register_user
 @catch_error(SHOW_ALL_ERROR)
@@ -91,17 +87,23 @@ async def show_all(
             )
         )
         ) as response:
+            if response.status == HTTPStatus.UNAUTHORIZED:
+                await query.message.reply_text(
+                    'Повторите авторизацию! /auth\n'
+                    'Срок действия истек 😢\n'
+                )
+                return
             main_buttons = [
                 [
                     InlineKeyboardButton(
                         'Отследить товар 🔍',
-                        callback_data='track_add_track'
+                        callback_data=ADD_TRACK
                     )
                 ],
                 [
                     InlineKeyboardButton(
                         'Меню 🛍️',
-                        callback_data='base_menu'
+                        callback_data=MENU
                     )
                 ]
             ]
@@ -117,7 +119,7 @@ async def show_all(
                     [
                         InlineKeyboardButton(
                             'Изменить ⚡',
-                            callback_data=f'track_target_price_refresh_{track["id"]}'
+                            callback_data=f'track_refresh_target_price_{track["id"]}'
                         ),
                         InlineKeyboardButton(
                             'Удалить ❌',
@@ -156,7 +158,7 @@ async def get_new_target_price(
     if not await check_authorization(query, context):
         return ConversationHandler.END
     await query.message.reply_text(NEW_TARGET_PRICE_MESSAGE)
-    return 'refresh_target_price'
+    return 'save_new_target_price'
 
 
 @catch_error(TRACK_REFRESH_ERROR)
@@ -181,9 +183,18 @@ async def target_price_refresh(
                 )
             ),
             json=refresh_data
-        ) as response:
+        ):
+            buttons = [
+                [
+                    InlineKeyboardButton(
+                        'Вернуться назад ⬅️',
+                        callback_data=f'{SHOW_ALL_TRACK}'
+                    )
+                ]
+            ]
             await update.message.reply_text(
-                'Цена успешно обновлена! ✅'
+                'Цена успешно обновлена! ✅',
+                reply_markup=InlineKeyboardMarkup(buttons)
             )
             return ConversationHandler.END
 
@@ -195,15 +206,21 @@ async def select_marketplace(
     interaction = await get_interaction(update)
     buttons = [
         [
-            InlineKeyboardButton('WB 🟣', callback_data='track_wildberries'),
-            InlineKeyboardButton('OZON 🔵', callback_data='track_ozon')
+            InlineKeyboardButton(
+                'WB 🟣',
+                callback_data=f'track_{WILDBERRIES}'
+            ),
+            InlineKeyboardButton(
+                'OZON 🔵',
+                callback_data=f'track_{OZON}'
+            )
         ]
     ]
     await interaction.message.reply_text(
         SELECT_MARKETPLACE_MESSAGE,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
-    return 'add_article'
+    return ADD_TRACK_ADD_ARTICLE
 
 
 async def add_article(
@@ -215,7 +232,7 @@ async def add_article(
     await query.message.reply_text(
         SELECT_ARTICLE_MESSAGE
     )
-    return 'add_target_price'
+    return ADD_TRACK_ADD_TARGET_PRICE
 
 
 async def add_target_price(
@@ -225,7 +242,7 @@ async def add_target_price(
     await update.message.reply_text(
         SELECT_TARGET_PRICE_MESSAGE
     )
-    return 'create_new_track'
+    return ADD_TRACK_CREATE_NEW_TRACK
 
 
 @catch_error(CREATE_NEW_TRACK_ERROR)
@@ -245,7 +262,7 @@ async def create_new_track(
                 [
                     InlineKeyboardButton(
                         'Изменить ⚡',
-                        callback_data=f'track_target_price_refresh_{new_track["id"]}'
+                        callback_data=f'{REFRESH_TARGET_PRICE}_{new_track["id"]}'
                     ),
                     InlineKeyboardButton(
                         'Удалить ❌',
@@ -254,14 +271,18 @@ async def create_new_track(
                 ],
                 [
                     InlineKeyboardButton(
-                        'Посмотреть историю 🛍️',
+                        'Вернуться назад ⬅️',
+                        callback_data=f'{SHOW_ALL_TRACK}'
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        'Вернуться назад ',
                         callback_data=f'track_check_history_{new_track["id"]}'
                     )
-                ]
+                ],
             ]
-            await update.message.reply_text(
-                SUCCESS_CREATE_TRACK_MESSAGE
-            )
+            await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
             await update.message.reply_text(
                 text=TRACK_CARD.format(
                     title=new_track['title'],
@@ -281,16 +302,16 @@ def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
     application.add_handler(
-        CallbackQueryHandler(show_all, pattern='^track_show_all$')
+        CallbackQueryHandler(show_all, pattern=f'^{SHOW_ALL_TRACK}$')
     )
     refresh_target_price_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
-                get_new_target_price, pattern='^track_target_price_refresh_'
+                get_new_target_price, pattern='^track_refresh_target_price_'
             )
         ],
         states={
-            'refresh_target_price': [
+            'save_new_target_price': [
                 MessageHandler(MESSAGE_HANDLERS, target_price_refresh)
             ]
         },
@@ -301,21 +322,21 @@ def handlers_installer(
     add_track_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
-                select_marketplace, pattern='^track_add_track$'
+                select_marketplace, pattern=f'^{ADD_TRACK}$'
             )
         ],
         states={
-            'add_article': [
+            ADD_TRACK_ADD_ARTICLE: [
                 CallbackQueryHandler(
-                    add_article, pattern='^track_(wildberries|ozon)$'
+                    add_article, pattern=f'^track_({WILDBERRIES}|{OZON})$'
                 )
             ],
-            'add_target_price': [
+            ADD_TRACK_ADD_TARGET_PRICE: [
                 MessageHandler(
                     MESSAGE_HANDLERS, add_target_price
                 )
             ],
-            'create_new_track': [
+            ADD_TRACK_CREATE_NEW_TRACK: [
                 MessageHandler(MESSAGE_HANDLERS, create_new_track)
             ]
         },

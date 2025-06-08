@@ -24,9 +24,16 @@ REGISTRATION_EMAIL = 'email'
 REGISTRATION_PASSWORD = 'password'
 
 AUTH_AUTHORIZATION = 'auth'
+AUTH_GET_PASSWORD = 'get_password'
 
+DELETE_START_DELETE = 'start_delete'
 
+EDIT_CHOOSE_EDIT_FIELD = 'choose_edit_field'
+EDIT_START_EDIT_FIELD = 'start_edit_field'
+EDIT_SAVE_EDIT_FULL_NAME = 'save_edit_full_name'
+EDIT_FINISH_EDIT = 'finish_edit'
 
+# Сообщения для reply_text
 
 ACCOUNT_INFO = """
 Настройки аккаунта
@@ -50,7 +57,7 @@ async def account_info(
     ]
     await interaction.message.reply_text(
         ACCOUNT_INFO,
-        reply_markup=buttons
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
 
 
@@ -75,7 +82,7 @@ async def start_registration(
     await query.message.reply_text(
         'Укажите Ваше имя и фамилию через пробел: '
     )
-    return 'full_name'
+    return REGISTRATION_FULL_NAME
 
 
 async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,7 +95,7 @@ async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         'Укажите Вашу почту: '
     )
-    return 'email'
+    return REGISTRATION_EMAIL
 
 
 async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,7 +106,7 @@ async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         'Придумайте пароль: '
     )
-    return 'password'
+    return REGISTRATION_PASSWORD
 
 
 async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -155,7 +162,7 @@ async def get_password_for_authorization(
     await config.message.reply_text(
         'Введите пароль от вашего аккаунта:'
     )
-    return 'authorization'
+    return AUTH_AUTHORIZATION
 
 
 @load_data_for_register_user
@@ -223,7 +230,7 @@ async def get_password_for_delete_account(
     await update.message.reply_text(
         'Введите пароль от вашего аккаунта:'
     )
-    return 'start_delete'
+    return DELETE_START_DELETE
 
 
 @load_data_for_register_user
@@ -322,7 +329,7 @@ async def choose_edit_field(
             'Выберите поле для редактирования ⏳',
             reply_markup=keyboard
         )
-        return 'start_edit_field'
+        return EDIT_START_EDIT_FIELD
     except Exception as error:
         await update.message.reply_text(
             'Ошибка при выборе поля редактирования! 🚫'
@@ -398,7 +405,7 @@ async def save_edit_full_name(
             'Выберите поле для редактирования ⏳',
             reply_markup=keyboard
         )
-        return 'start_edit_field'
+        return EDIT_START_EDIT_FIELD
         
     except Exception as error:
         await update.message.reply_text(
@@ -506,7 +513,7 @@ def handlers_installer(
             AUTH_AUTHORIZATION: [
                 MessageHandler(MESSAGE_HANDLERS, authorization)
             ],
-            'get_password': [
+            AUTH_GET_PASSWORD: [
                 MessageHandler(MESSAGE_HANDLERS, get_password_for_authorization)
             ]
         },
@@ -521,7 +528,7 @@ def handlers_installer(
             )
         ],
         states={
-            'start_delete': [
+            DELETE_START_DELETE: [
                 MessageHandler(MESSAGE_HANDLERS, delete_account)
             ]
         },
@@ -534,16 +541,16 @@ def handlers_installer(
             CommandHandler('edit_account', get_password_for_edit_account)
         ],
         states={
-            'choose_edit_field': [
+            EDIT_CHOOSE_EDIT_FIELD: [
                 MessageHandler(MESSAGE_HANDLERS, choose_edit_field)
             ],
-            'start_edit_field': [
+            EDIT_START_EDIT_FIELD: [
                 CallbackQueryHandler(start_edit_field, pattern='^edit_')
             ],
-            'save_edit_full_name': [
+            EDIT_SAVE_EDIT_FULL_NAME: [
                 MessageHandler(MESSAGE_HANDLERS, save_edit_full_name)
             ],
-            'finish_edit': [
+            EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')
             ]
         },

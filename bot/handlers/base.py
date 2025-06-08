@@ -7,6 +7,7 @@ from telegram.ext import (ApplicationBuilder, CommandHandler, ContextTypes,
 from bot.handlers.constants import PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import catch_error
+from bot.handlers.callback_data import MENU, START_REGISTRATION, SHOW_ALL_TRACK
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -19,7 +20,7 @@ _____________________________
 на популярных маркетплейсах и получать уведомления,
 если цена упала до желаемой!
 /start - запуск бота
-/auth - пройти авторизацию'
+/auth - пройти авторизацию
 /account_info - настройки аккаунта
 """
 
@@ -44,10 +45,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             buttons = [
                 [
                     InlineKeyboardButton(
-                        'Меню 📦', callback_data='base_menu'
+                        'Меню 📦', callback_data=MENU
                     )
                 ]
             ]
+        await update.message.reply_text(
+            'Загрузка интерфейса...',
+            reply_markup=main_keyboard
+        )
         await update.message.reply_text(
             text=START_MESSAGE.format(
                 name=update.message.from_user.username
@@ -55,16 +60,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=PARSE_MODE,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        await update.message.reply_text(
-            'Загрузка...',
-            reply_markup=main_keyboard
-        )
     else:
         buttons = [
             [
                 InlineKeyboardButton(
                     'Начать регистрацию 🔥',
-                    callback_data='start_registration'
+                    callback_data=START_REGISTRATION
                 )
             ]
         ]
@@ -92,7 +93,7 @@ async def menu(
         [
             InlineKeyboardButton(
                 'Мои товары 📦',
-                callback_data='track_show_all'
+                callback_data=SHOW_ALL_TRACK
             )
         ],
         
@@ -113,5 +114,5 @@ def handlers_installer(
         CommandHandler('info', info)
     )
     application.add_handler(
-        CallbackQueryHandler(menu, pattern='^base_menu$')
+        CallbackQueryHandler(menu, pattern=f'^{MENU}$')
     )
