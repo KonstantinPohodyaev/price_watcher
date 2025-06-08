@@ -3,15 +3,18 @@ import re
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from telegram import CallbackQuery, Message, Update
+from telegram import (
+    CallbackQuery, Update, InlineKeyboardMarkup, InlineKeyboardButton
+)
 from telegram.ext import ContextTypes
-
+from bot.handlers.callback_data import CHECK_HISTORY
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 
 password_hasher = PasswordHasher()
 
-
+# Вспомогательные утилиты.
 def catch_error(error_message: str):
+    """Добавляет хандлерам try-except конструкцию."""
     def decorator(handler):
         async def wrapper(
             update: Update,
@@ -66,6 +69,7 @@ async def load_user_data(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+    """Загрузка пользовательский данных (для тестирования)."""
     async with session.post(
             GET_USER_BY_TELEGRAM_ID, json=dict(
             telegram_id=update.message.from_user.id
@@ -97,8 +101,32 @@ async def get_interaction(update: Update) -> Update | CallbackQuery:
 def get_headers(
     context: ContextTypes.DEFAULT_TYPE
 ) -> dict[str, str]:
+    """Собирает заголовок для прохождения авторизации."""
     return dict(
         Authorization=(
             f'Bearer {context.user_data["account"]["jwt_token"]}'
         )
     )
+
+
+# Утилиты для работы с клавиатурами.
+def get_track_keyboard(track_id: int) -> list[InlineKeyboardButton]:
+    """Собирает кнопки для экземпляра Track."""
+    return [
+        [
+            InlineKeyboardButton(
+                'Изменить ⚡',
+                callback_data=f'track_refresh_target_price_{track_id}'
+            ),
+            InlineKeyboardButton(
+                'Удалить ❌',
+                callback_data=f'track_delete_{track_id}'
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                'Посмотреть историю 🛍️',
+                callback_data=f'{CHECK_HISTORY}_{track_id}'
+            )
+        ]
+    ]

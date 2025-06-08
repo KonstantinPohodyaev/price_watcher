@@ -1,24 +1,22 @@
-import aiohttp
 from http import HTTPStatus
 
+import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          ContextTypes, ConversationHandler,
-                          InlineQueryHandler, MessageHandler)
+                          ContextTypes, ConversationHandler, MessageHandler)
 
-from bot.endpoints import USERS_TRACKS, USERS_TRACKS_BY_ID
+from bot.endpoints import (
+    CREATE_NEW_TRACK, USERS_TRACKS, USERS_TRACKS_BY_ID,
+    GET_TRACKS_PRICE_HISTORY
+)
+from bot.handlers.callback_data import (ADD_TRACK, MENU, OZON,
+                                        SHOW_ALL_TRACK, WILDBERRIES,
+                                        CHECK_HISTORY)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import (
-    catch_error, check_authorization, get_interaction, get_headers
-)
+from bot.handlers.utils import (catch_error, check_authorization, get_headers,
+                                get_interaction, get_track_keyboard)
 from bot.handlers.validators import validate_price
-from bot.endpoints import CREATE_NEW_TRACK
-from bot.handlers.callback_data import (
-    MENU, REFRESH_TARGET_PRICE, DELETE_TRACK, CHECK_HISTORY, ADD_TRACK,
-    WILDBERRIES, OZON, SHOW_ALL_TRACK
-)
-
 
 # Состояния для ConversationHandler
 TARGET_PRICE_REFRESH_TARGET_PRICE = 'refresh_target_price'
@@ -28,7 +26,7 @@ ADD_TRACK_ADD_TARGET_PRICE = 'add_target_price'
 ADD_TRACK_CREATE_NEW_TRACK = 'create_new_track'
 
 
-
+# Сообщения для reply_text
 SHOW_ALL_ERROR = (
     'Что-то пошло не так при загрузке отслеживаемых товаров! ❌\n'
     'Попробуйте еще раз!'
@@ -50,6 +48,11 @@ _________________________
 Текущая цена: <b>{current_price}</b>
 Желаемая цена: <b>{target_price}</b>
 """
+PRICE_HISTORY_CARD = """
+Цена: <b>{price}</b>
+Дата создания: <b>{created_at}</b>
+"""
+
 
 NEW_TARGET_PRICE_MESSAGE = 'Укажите новую желаемую цену 🏷️'
 
@@ -62,8 +65,8 @@ CREATE_NEW_TRACK_ERROR = 'Ошибка при создании нового то
 TRACK_CARD = """
 <b>{title}</b> - <code>{article}</code>
 _________________________
-Текущая цена: <b>{current_price}</b>
-Желаемая цена: <b>{target_price}</b>
+💸 Текущая цена: <b>{current_price}</b>
+🎯 Желаемая цена: <b>{target_price}</b>
 Дата создания: <b>{created_at}</b>
 Дата последней проверки: <b>{last_checked_at}</b>
 """
@@ -115,24 +118,6 @@ async def show_all(
                 )
                 return
             for track in tracks:
-                TRACK_BUTTONS = [
-                    [
-                        InlineKeyboardButton(
-                            'Изменить ⚡',
-                            callback_data=f'track_refresh_target_price_{track["id"]}'
-                        ),
-                        InlineKeyboardButton(
-                            'Удалить ❌',
-                            callback_data=f'track_delete_{track["id"]}'
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            'Посмотреть историю 🛍️',
-                            callback_data=f'track_check_history_{track["id"]}'
-                        )
-                    ]
-                ]
                 await query.message.reply_text(
                     text=SHORT_TRACK_CARD.format(
                         title=track.get('title'),
@@ -141,7 +126,9 @@ async def show_all(
                         target_price=track.get('target_price')
                     ),
                     parse_mode=PARSE_MODE,
-                    reply_markup=InlineKeyboardMarkup(TRACK_BUTTONS)
+                    reply_markup=InlineKeyboardMarkup(
+                        get_track_keyboard(track["id"])
+                    )
                 )
             await query.message.reply_text(
                 'Навигация 💬',
@@ -211,8 +198,8 @@ async def select_marketplace(
                 callback_data=f'track_{WILDBERRIES}'
             ),
             InlineKeyboardButton(
-                'OZON 🔵',
-                callback_data=f'track_{OZON}'
+                'OZON (WB)🔵',
+                callback_data=f'track_{WILDBERRIES}'
             )
         ]
     ]
@@ -249,7 +236,6 @@ async def add_target_price(
 async def create_new_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    print(context.user_data['new_track'])
     context.user_data['new_track']['target_price'] = update.message.text
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -258,30 +244,6 @@ async def create_new_track(
             json=context.user_data['new_track']
         ) as response:
             new_track = await response.json()
-            TRACK_BUTTONS = [
-                [
-                    InlineKeyboardButton(
-                        'Изменить ⚡',
-                        callback_data=f'{REFRESH_TARGET_PRICE}_{new_track["id"]}'
-                    ),
-                    InlineKeyboardButton(
-                        'Удалить ❌',
-                        callback_data=f'track_delete_{new_track["id"]}'
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        'Вернуться назад ⬅️',
-                        callback_data=f'{SHOW_ALL_TRACK}'
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        'Вернуться назад ',
-                        callback_data=f'track_check_history_{new_track["id"]}'
-                    )
-                ],
-            ]
             await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
             await update.message.reply_text(
                 text=TRACK_CARD.format(
@@ -293,16 +255,70 @@ async def create_new_track(
                     last_checked_at=new_track['last_checked_at']
                 ),
                 parse_mode=PARSE_MODE,
-                reply_markup=InlineKeyboardMarkup(TRACK_BUTTONS)
+                reply_markup=InlineKeyboardMarkup(
+                    get_track_keyboard(new_track["id"])
+                )
             )
             return ConversationHandler.END
+
+
+async def check_track_history(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    """Получает последнии записи в истории товара."""
+    query = update.callback_query
+    await query.answer()
+    track_id = query.data.split('_')[-1]
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            GET_TRACKS_PRICE_HISTORY.format(
+                track_id=track_id
+            )
+        ) as response:
+            writes = await response.json()
+            navigate_buttons = [
+                [
+                    InlineKeyboardButton(
+                        'Вернуться к списку товаров ⬅️',
+                        callback_data=f'{SHOW_ALL_TRACK}'
+                    )
+                ]
+            ]
+            if not writes:
+                await query.message.reply_text(
+                    'История товара пуста(',
+                    reply_markup=InlineKeyboardMarkup(navigate_buttons)
+                )
+                return
+            await query.message.reply_text(
+                f'История товара {track_id}'
+            )
+            for write in writes:
+                await query.message.reply_text(
+                    text=PRICE_HISTORY_CARD.format(
+                        price=write['price'],
+                        created_at=write['created_at']
+                    ),
+                    parse_mode=PARSE_MODE
+                )
+            await query.message.reply_text(
+                'Навигация 📋',
+                reply_markup=InlineKeyboardMarkup(navigate_buttons)
+            )
 
 
 def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
     application.add_handler(
-        CallbackQueryHandler(show_all, pattern=f'^{SHOW_ALL_TRACK}$')
+        CallbackQueryHandler(
+            show_all, pattern=f'^{SHOW_ALL_TRACK}$'
+        )
+    )
+    application.add_handler(
+        CallbackQueryHandler(
+            check_track_history, pattern=f'^{CHECK_HISTORY}_'
+        )
     )
     refresh_target_price_conversation_handler = ConversationHandler(
         entry_points=[
@@ -344,6 +360,16 @@ def handlers_installer(
             MessageHandler(MESSAGE_HANDLERS, create_new_track)
         ]
     )
+    # check_history_conversation_handler = ConversationHandler(
+    #     entry_points=[
+    #         CallbackQueryHandler(
+    #             check_track_history, pattern=f'^{CHECK_HISTORY}_'
+    #         )
+    #     ],
+    #     states={
+            
+    #     }
+    # )
     application.add_handler(
         refresh_target_price_conversation_handler
     )
