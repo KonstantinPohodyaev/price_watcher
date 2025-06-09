@@ -13,3 +13,8 @@ CHECK_HISTORY = 'track_check_history'
 ADD_TRACK = 'track_add_track'
 WILDBERRIES = 'wildberries'
 OZON = 'ozon'
+
+# модуль handlers.user
+EDIT_FULL_NAME_CALLBACK = 'edit_full_name'
+EDIT_EMAIL_CALLBACK = 'edit_email'
+EDIT_PASSWORD = 'edit_password'

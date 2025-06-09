@@ -14,6 +14,9 @@ from bot.handlers.utils import (check_authorization, check_password,
                                 get_headers, get_interaction)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
+from bot.handlers.callback_data import (
+    EDIT_FULL_NAME_CALLBACK, EDIT_EMAIL_CALLBACK, EDIT_PASSWORD
+)
 
 # Состояния для ConversationHandler
 
@@ -29,6 +32,8 @@ DELETE_START_DELETE = 'start_delete'
 EDIT_CHOOSE_EDIT_FIELD = 'choose_edit_field'
 EDIT_START_EDIT_FIELD = 'start_edit_field'
 EDIT_SAVE_EDIT_FULL_NAME = 'save_edit_full_name'
+EDIT_SAVE_EDIT_EMAIL = 'save_edit_email'
+EDIT_SAVE_EDIT_PASSWORD = 'save_edit_password'
 EDIT_FINISH_EDIT = 'finish_edit'
 
 # Сообщения для reply_text
@@ -40,6 +45,33 @@ __________________
 /delete_account - удалить аккаунт
 /account_data - посмотреть данные аккаунта
 """
+
+USER_CARD = """
+Имя: {name}
+Фамилия: {surname}
+Telegram-id: {telegram_id}
+Почта: {email}
+Токен: {jwt_token}
+"""
+
+EDIT_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
+        ),
+        InlineKeyboardButton(
+            'Почта', callback_data=EDIT_EMAIL_CALLBACK
+        ),
+        InlineKeyboardButton(
+            'Пароль', callback_data=EDIT_PASSWORD
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            'Применить ✅', callback_data='finish_edit'
+        )
+    ]
+]
 
 
 async def account_info(
@@ -267,12 +299,6 @@ async def delete_account(
         print(str(error))
 
 
-EDIT_FULL_NAME_CALLBACK = 'edit_full_name'
-EDIT_EMAIL_CALLBACK = 'edit_email'
-EDIT_PASSWORD = 'edit_password'
-
-
-
 async def get_password_for_edit_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -304,28 +330,10 @@ async def choose_edit_field(
             return 'choose_edit_field'
         if not await check_authorization(config, context):
             return ConversationHandler.END
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
-                ),
-                InlineKeyboardButton(
-                    'Почта', callback_data=EDIT_EMAIL_CALLBACK
-                ),
-                InlineKeyboardButton(
-                    'Пароль', callback_data=EDIT_PASSWORD
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    'Применить ✅', callback_data='finish_edit'
-                )
-            ]
-        ]
-        keyboard = InlineKeyboardMarkup(buttons)
         await update.message.reply_text(
-            'Выберите поле для редактирования ⏳',
-            reply_markup=keyboard
+            'Выберите поле для редактирования ⏳\n'
+            'После редактирования нажмите применить!',
+            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
         return EDIT_START_EDIT_FIELD
     except Exception as error:
@@ -373,41 +381,74 @@ async def save_edit_full_name(
     try:
         full_name = update.message.text
         if not await validate_full_name(update, context, full_name):
-            return ConversationHandler.END
+            return EDIT_SAVE_EDIT_FULL_NAME
         name, surname = full_name.split()
         context.user_data['edit_account']['name'] = name
         context.user_data['edit_account']['surname'] = surname
         await update.message.reply_text(
             'Новое имя и фамилия сохранены!\n'
         )
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
-                ),
-                InlineKeyboardButton(
-                    'Почта', callback_data=EDIT_EMAIL_CALLBACK
-                ),
-                InlineKeyboardButton(
-                    'Пароль', callback_data=EDIT_PASSWORD
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    'Применить ✅', callback_data='finish_edit'
-                )
-            ]
-        ]
-        keyboard = InlineKeyboardMarkup(buttons)
         await update.message.reply_text(
             'Выберите поле для редактирования ⏳',
-            reply_markup=keyboard
+            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
         return EDIT_START_EDIT_FIELD
         
     except Exception as error:
         await update.message.reply_text(
             'Ошибка при сохранении новых данных о имени и фамилии в БД 🚫'
+        )
+        print(str(error))
+        return ConversationHandler.END
+
+
+async def save_edit_email(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+    try:
+        email = update.message.text
+        if not await validate_email(update, context, email):
+            return EDIT_SAVE_EDIT_EMAIL
+        context.user_data['edit_account']['email'] = email
+        await update.message.reply_text(
+            'Новая почта сохранена!\n'
+        )
+        await update.message.reply_text(
+            'Выберите поле для редактирования ⏳',
+            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+        )
+        return EDIT_START_EDIT_FIELD
+        
+    except Exception as error:
+        await update.message.reply_text(
+            'Ошибка при сохранении новой почты в БД 🚫'
+        )
+        print(str(error))
+        return ConversationHandler.END
+
+
+async def save_edit_password(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+    try:
+        password = update.message.text
+        if not await validate_password(update, context, password):
+            return EDIT_SAVE_EDIT_PASSWORD
+        context.user_data['edit_account']['password'] = password
+        await update.message.reply_text(
+            'Новый пароль сохранен!\n'
+        )
+        await update.message.reply_text(
+            'Выберите поле для редактирования ⏳',
+            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+        )
+        return EDIT_START_EDIT_FIELD
+        
+    except Exception as error:
+        await update.message.reply_text(
+            'Ошибка при сохранении нового пароля в БД 🚫'
         )
         print(str(error))
         return ConversationHandler.END
@@ -421,7 +462,6 @@ async def finish_edit(
     await query.answer()
     try:
         async with aiohttp.ClientSession() as session:
-            print(context.user_data['edit_account'])
             async with session.patch(
                 USERS_ME_REFRESH,
                 headers=dict(
@@ -440,8 +480,14 @@ async def finish_edit(
                     ]
                 ]
                 await query.message.reply_text(
-                    f'Данные обновлены ✅\n'
-                    f'```python{new_user_data}```',
+                    text='Данные обновлены ✅\n' + 
+                    USER_CARD.format(
+                        name=new_user_data['name'],
+                        surname=new_user_data['surname'],
+                        telegram_id=new_user_data['telegram_id'],
+                        email=new_user_data['email'],
+                        jwt_token=new_user_data['jwt_token']['access_token']
+                    ),
                     reply_markup=InlineKeyboardMarkup(
                         buttons
                     )
@@ -547,6 +593,12 @@ def handlers_installer(
             ],
             EDIT_SAVE_EDIT_FULL_NAME: [
                 MessageHandler(MESSAGE_HANDLERS, save_edit_full_name)
+            ],
+            EDIT_SAVE_EDIT_EMAIL: [
+                MessageHandler(MESSAGE_HANDLERS, save_edit_email)
+            ],
+            EDIT_SAVE_EDIT_PASSWORD: [
+                MessageHandler(MESSAGE_HANDLERS, save_edit_email)
             ],
             EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')
