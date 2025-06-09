@@ -8,16 +8,14 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
 
 from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
                            USERS_ME_REFRESH)
+from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
+                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import (check_authorization, check_password,
-                                get_headers, get_interaction,
-                                catch_error)
+from bot.handlers.utils import (catch_error, check_authorization,
+                                check_password, get_headers, get_interaction)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
-from bot.handlers.callback_data import (
-    EDIT_FULL_NAME_CALLBACK, EDIT_EMAIL_CALLBACK, EDIT_PASSWORD
-)
 
 # Состояния для ConversationHandler
 

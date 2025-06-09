@@ -3,12 +3,12 @@ import re
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from telegram import (
-    CallbackQuery, Update, InlineKeyboardMarkup, InlineKeyboardButton
-)
+from telegram import (CallbackQuery, InlineKeyboardButton,
+                      InlineKeyboardMarkup, Update)
 from telegram.ext import ContextTypes, ConversationHandler
-from bot.handlers.callback_data import CHECK_HISTORY
+
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
+from bot.handlers.callback_data import CHECK_HISTORY
 
 password_hasher = PasswordHasher()
 

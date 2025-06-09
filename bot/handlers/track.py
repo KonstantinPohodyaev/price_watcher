@@ -5,13 +5,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           ContextTypes, ConversationHandler, MessageHandler)
 
-from bot.endpoints import (
-    CREATE_NEW_TRACK, USERS_TRACKS, USERS_TRACKS_BY_ID,
-    GET_TRACKS_PRICE_HISTORY
-)
-from bot.handlers.callback_data import (ADD_TRACK, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES,
-                                        CHECK_HISTORY)
+from bot.endpoints import (CREATE_NEW_TRACK, GET_TRACKS_PRICE_HISTORY,
+                           USERS_TRACKS, USERS_TRACKS_BY_ID)
+from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
+                                        SHOW_ALL_TRACK, WILDBERRIES)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
