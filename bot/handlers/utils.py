@@ -6,14 +6,14 @@ from argon2.exceptions import VerifyMismatchError
 from telegram import (
     CallbackQuery, Update, InlineKeyboardMarkup, InlineKeyboardButton
 )
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 from bot.handlers.callback_data import CHECK_HISTORY
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 
 password_hasher = PasswordHasher()
 
 # Вспомогательные утилиты.
-def catch_error(error_message: str):
+def catch_error(error_message: str, conv=False):
     """Добавляет хандлерам try-except конструкцию."""
     def decorator(handler):
         async def wrapper(
@@ -27,6 +27,8 @@ def catch_error(error_message: str):
                 interaction = await get_interaction(update)
                 await interaction.message.reply_text(error_message)
                 print(str(error))
+                if conv:
+                    return ConversationHandler.END
         return wrapper
     return decorator
 

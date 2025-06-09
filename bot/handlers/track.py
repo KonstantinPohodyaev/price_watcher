@@ -148,7 +148,7 @@ async def get_new_target_price(
     return 'save_new_target_price'
 
 
-@catch_error(TRACK_REFRESH_ERROR)
+@catch_error(TRACK_REFRESH_ERROR, conv=True)
 async def target_price_refresh(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -232,7 +232,7 @@ async def add_target_price(
     return ADD_TRACK_CREATE_NEW_TRACK
 
 
-@catch_error(CREATE_NEW_TRACK_ERROR)
+@catch_error(CREATE_NEW_TRACK_ERROR, conv=True)
 async def create_new_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -360,16 +360,6 @@ def handlers_installer(
             MessageHandler(MESSAGE_HANDLERS, create_new_track)
         ]
     )
-    # check_history_conversation_handler = ConversationHandler(
-    #     entry_points=[
-    #         CallbackQueryHandler(
-    #             check_track_history, pattern=f'^{CHECK_HISTORY}_'
-    #         )
-    #     ],
-    #     states={
-            
-    #     }
-    # )
     application.add_handler(
         refresh_target_price_conversation_handler
     )
