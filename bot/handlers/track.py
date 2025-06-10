@@ -6,9 +6,10 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           ContextTypes, ConversationHandler, MessageHandler)
 
 from bot.endpoints import (CREATE_NEW_TRACK, GET_TRACKS_PRICE_HISTORY,
-                           USERS_TRACKS, USERS_TRACKS_BY_ID)
+                           USERS_TRACKS, USERS_TRACKS_BY_ID, DELETE_TRACK_BY_ID)
 from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES)
+                                        SHOW_ALL_TRACK, WILDBERRIES,
+                                        CONFIRM_TRACK_DELETE)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
@@ -21,6 +22,10 @@ TARGET_PRICE_REFRESH_TARGET_PRICE = 'refresh_target_price'
 ADD_TRACK_ADD_ARTICLE = 'add_article'
 ADD_TRACK_ADD_TARGET_PRICE = 'add_target_price'
 ADD_TRACK_CREATE_NEW_TRACK = 'create_new_track'
+
+FINISH_DELETE_TRACK = 'delete_track'
+CONFIRM_DELETE = 'confirm'
+CANCEL_DELETE = 'cancel'
 
 
 # Сообщения для reply_text
@@ -42,6 +47,7 @@ TRACK_REFRESH_ERROR = (
 SHORT_TRACK_CARD = """
 <b>{title}</b> - <code>{article}</code>
 _________________________
+ID: <b>{id}</b>
 Текущая цена: <b>{current_price}</b>
 Желаемая цена: <b>{target_price}</b>
 """
@@ -58,6 +64,7 @@ SELECT_ARTICLE_MESSAGE = 'Укажите артикул товара 🏷️'
 SELECT_TARGET_PRICE_MESSAGE = 'Укажите желаемую цену 🧾'
 SUCCESS_CREATE_TRACK_MESSAGE = 'Новый товар добавлен! ✅'
 CREATE_NEW_TRACK_ERROR = 'Ошибка при создании нового товара ⚠️'
+DELETE_TRACK_ERROR = 'Ошибка при удалении товара из отслеживаемых ⚠️'
 
 TRACK_CARD = """
 <b>{title}</b> - <code>{article}</code>
@@ -114,6 +121,7 @@ async def show_all(
                 await query.message.reply_text(
                     text=SHORT_TRACK_CARD.format(
                         title=track.get('title'),
+                        id=track.get('id'),
                         article=track.get('article'),
                         current_price=track.get('current_price'),
                         target_price=track.get('target_price')
@@ -301,9 +309,61 @@ async def confirm_track_delete(
 ):
     query = update.callback_query
     await query.answer()
+    track_id = query.data.split('_')[-1]
+    context.user_data['deleted_track'] = dict()
+    context.user_data['deleted_track']['id'] = track_id
+    buttons = [
+        [
+            InlineKeyboardButton(
+                'Подтвердить 🖱️',
+                callback_data=CONFIRM_DELETE
+            ),
+            InlineKeyboardButton(
+                'Назад ⬅️',
+                callback_data=CANCEL_DELETE
+            )
+        ]
+    ]
     await query.message.reply_text(
-        f'Вы точно хотите удалить товар с id ='
+        f'Вы точно хотите удалить товар с id = {track_id}',
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
+    return FINISH_DELETE_TRACK
+
+
+@catch_error(DELETE_TRACK_ERROR, conv=True)
+async def finish_delete_track(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    query = update.callback_query
+    await query.answer()
+    buttons = [
+        [
+            InlineKeyboardButton(
+                'К списку товаров ⬅️',
+                callback_data=SHOW_ALL_TRACK
+            )
+        ]
+    ]
+    if query.data == CANCEL_DELETE:
+        await query.message.reply_text(
+            f'Удаление товара с id = '
+            f'{context.user_data["deleted_track"]["id"]} отменено!',
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        return ConversationHandler.END
+    async with aiohttp.ClientSession() as session:
+        async with session.delete(
+            DELETE_TRACK_BY_ID.format(
+                id=context.user_data['deleted_track']['id']
+            )
+        ):
+            await query.message.reply_text(
+                f'Товар с id = {context.user_data["deleted_track"]["id"]} '
+                f'успешно удален! ✅',
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+    return ConversationHandler.END
 
 
 def handlers_installer(
@@ -359,14 +419,33 @@ def handlers_installer(
             MessageHandler(MESSAGE_HANDLERS, create_new_track)
         ]
     )
-    # delete_track_conversation_handler = ConversationHandler(
-    #     entry_points=[
-    #         CallbackQueryHandler()
-    #     ]
-    # )
+    delete_track_conversation_handler = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(
+                confirm_track_delete, pattern='^track_delete_'
+            )
+        ],
+        states={
+            FINISH_DELETE_TRACK: [
+                CallbackQueryHandler(
+                    finish_delete_track,
+                    pattern=f'^({CONFIRM_DELETE}|{CANCEL_DELETE})$'
+                )
+            ]
+        },
+        fallbacks=[
+            CallbackQueryHandler(
+                finish_delete_track,
+                pattern=f'^({CONFIRM_DELETE}|{CANCEL_DELETE})$'
+            )
+        ]
+    )
     application.add_handler(
         refresh_target_price_conversation_handler
     )
     application.add_handler(
         add_track_conversation_handler
+    )
+    application.add_handler(
+        delete_track_conversation_handler
     )

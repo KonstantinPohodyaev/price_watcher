@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 62995a536309
+Revision ID: 6d650683356b
 Revises: 
-Create Date: 2025-06-06 23:22:26.326206
+Create Date: 2025-06-10 18:13:16.226944
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '62995a536309'
+revision: str = '6d650683356b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -65,6 +65,7 @@ def upgrade() -> None:
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('article', 'marketplace', 'user_id', name='unique_article_marketplace_user_id'),
     sa.UniqueConstraint('id')
     )
     op.create_table('pricehistory',
