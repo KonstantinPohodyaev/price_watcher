@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.v1.utils import get_wildberries_product_data, wildberries_parse
 from src.api.v1.validators import (check_track_exists_by_id,
                                    check_unique_track_by_marketplace_article,
-                                   not_negative_target_price)
+                                   not_negative_target_price, validate_marketplace,
+                                   check_track_with_marketplace_and_article_exists)
 from src.core.user import current_user
 from src.crud.price_history import price_history_crud
 from src.crud.track import track_crud
@@ -57,6 +58,27 @@ async def get_track_by_id(
     return await track_crud.get(track_id, session)
 
 
+@router.get(
+    '/tracks/{marketplace}/{article}',
+    status_code=status.HTTP_200_OK,
+    response_model=TrackDB,
+    response_model_exclude_none=True
+)
+async def get_track_by_artice_and_marketplace(
+    marketplace: str,
+    article: str,
+    session: AsyncSession = Depends(get_async_session)
+):
+    validate_marketplace(marketplace)
+    track = await track_crud.get_track_by_artice_and_marketplace(
+        article, marketplace, session
+    )
+    check_track_with_marketplace_and_article_exists(
+        track, article, marketplace
+    )
+    return track
+
+
 @router.post(
     '/tracks',
     status_code=status.HTTP_201_CREATED,
@@ -78,12 +100,22 @@ async def create_track(
     track_db_create_schema = TrackDBCreate(
         user_id=user.id, **create_track_schema.model_dump()
     )
-    parsed_data = await wildberries_parse(
-        track_db_create_schema.article
-    )
-    create_track_schema = get_wildberries_product_data(
-        track_db_create_schema, parsed_data
-    )
+    if create_track_schema.marketplace == Marketplace.WILDBERRIES.value:
+        parsed_data = await wildberries_parse(
+            track_db_create_schema.article
+        )
+        create_track_schema = get_wildberries_product_data(
+            track_db_create_schema, parsed_data
+        )
+        
+    # Добавить условие, если необходимо поддержка нескольких маркетплейсов.
+    else:
+        parsed_data = await wildberries_parse(
+            track_db_create_schema.article
+        )
+        create_track_schema = get_wildberries_product_data(
+            track_db_create_schema, parsed_data
+        )
     new_track = await track_crud.create(
         track_db_create_schema, session
     )

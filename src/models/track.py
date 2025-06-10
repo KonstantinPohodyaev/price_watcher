@@ -1,8 +1,7 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, func
+from sqlalchemy import ForeignKey, String, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.annotations import int_pk, not_null_decimal, not_null_str
@@ -16,6 +15,10 @@ if TYPE_CHECKING:
 
 URL_MAX_LENGTH = 2 ** 11
 IMAGE_URL_MAX_LENGTH = 2 ** 11
+
+UNIQUE_ARTICLE_MARKETPLACE_USER_ID_CONSTRAINT_NAME = (
+    'unique_article_marketplace_user_id'
+)
 
 
 class Track(Base):
@@ -54,4 +57,11 @@ class Track(Base):
         back_populates='track',
         lazy='selectin',
         cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            'article', 'marketplace', 'user_id',
+            name=UNIQUE_ARTICLE_MARKETPLACE_USER_ID_CONSTRAINT_NAME
+        ),
     )
