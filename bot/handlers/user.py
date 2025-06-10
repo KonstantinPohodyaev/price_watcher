@@ -6,17 +6,16 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
-                           USERS_GET_ME, USERS_ME_REFRESH)
+from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, DELETE_USER_BY_ID,
+                           USERS_REFRESH_ME)
+from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
+                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import (check_authorization, check_password,
-                                get_headers, get_interaction)
+from bot.handlers.utils import (catch_error, check_authorization,
+                                check_password, get_headers, get_interaction)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
-from bot.handlers.callback_data import (
-    EDIT_FULL_NAME_CALLBACK, EDIT_EMAIL_CALLBACK, EDIT_PASSWORD
-)
 
 # Состояния для ConversationHandler
 
@@ -53,6 +52,22 @@ Telegram-id: {telegram_id}
 Почта: {email}
 Токен: {jwt_token}
 """
+
+REGISTRATION_ERROR = (
+    'Возникла ошибка при регистрации пользователя! 🚫'
+)
+AUTHORIZATION_ERROR = (
+    'Ошибка при получении JWT-токена. Повторите регистрацию! 🚫'
+)
+DELETE_ACCOUNT_ERROR = 'Ошибка при удалении аккаунта! 🚫'
+SELECT_EDIT_FIELD_ERROR = 'Ошибка при выборе поля редактирования! 🚫'
+START_EDIT_ERROR = 'Ошибка при редактировании! 🚫'
+SAVE_FULL_NAME_ERROR = (
+    'Ошибка при сохранении новых данных о имени и фамилии в БД 🚫'
+)
+SAVE_EMAIL_ERROR = 'Ошибка при сохранении новой почты в БД 🚫'
+SAVE_PASSWORD_ERROR = 'Ошибка при сохранении нового пароля в БД 🚫'
+EDIT_FINISH_ERROR = 'Ошибка при сохранении изменений аккаунта 🚫'
 
 EDIT_BUTTONS = [
     [
@@ -139,44 +154,39 @@ async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return REGISTRATION_PASSWORD
 
 
+@catch_error(REGISTRATION_ERROR, conv=True)
 async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     entered_password = update.message.text
     if not await validate_password(update, context, entered_password):
         return 'password'
     context.user_data['account']['password'] = entered_password
     context.user_data['account']['telegram_id'] = update.message.from_user.id
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                REGISTER_USER, json=context.user_data['account']
-            ) as response:
-                if response.status == HTTPStatus.CREATED:
-                    user = await response.json()
-                    await update.message.reply_text(
-                        'Регистрация закончена!'
-                    )
-                    buttons = [
-                        [
-                            InlineKeyboardButton(
-                                'Авторизация', callback_data='authorization'
-                            )
-                        ]
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            REGISTER_USER, json=context.user_data['account']
+        ) as response:
+            if response.status == HTTPStatus.CREATED:
+                user = await response.json()
+                await update.message.reply_text(
+                    'Регистрация закончена!'
+                )
+                buttons = [
+                    [
+                        InlineKeyboardButton(
+                            'Авторизация', callback_data='authorization'
+                        )
                     ]
-                    await update.message.reply_text(
-                        text=(
-                            f'Привет, {user["name"]}! '
-                            f'Вот твой id: {user["id"]}'
-                        ),
-                        reply_markup=InlineKeyboardMarkup(buttons)
-                    )
-                else:
-                    detail = await response.json()
-                    await update.message.reply_text(detail)
-    except Exception as error:
-        await update.message.reply_text(
-            'Возникла ошибка при регистрации пользователя('
-        )
-        print(str(error))
+                ]
+                await update.message.reply_text(
+                    text=(
+                        f'Привет, {user["name"]}! '
+                        f'Вот твой id: {user["id"]}'
+                    ),
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+            else:
+                detail = await response.json()
+                await update.message.reply_text(detail)
     return ConversationHandler.END
 
 
@@ -195,62 +205,57 @@ async def get_password_for_authorization(
     return AUTH_AUTHORIZATION
 
 
+@catch_error(AUTHORIZATION_ERROR, conv=True)
 @load_data_for_register_user
 async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
-    try:
-        async with aiohttp.ClientSession() as session:
-            if not await check_password(
-                update,
-                context,
-                entered_password,
-                context.user_data['account']['hashed_password']
-            ):
-                return 'authorization'
-            request_body = dict(
-                grant_type='password',
-                username=context.user_data['account']['email'],
-                password=entered_password,
-                scope=''
-            )
-            async with session.post(
-                GET_JWT_TOKEN, data=request_body
-            ) as response:
-                data = await response.json()
-                context.user_data['account']['jwt_token'] = data['access_token']
-            async with session.patch(
-                USERS_ME_REFRESH,
-                headers=get_headers(context),
-                json=dict(
-                    jwt_token=dict(
-                        access_token=context.user_data['account']['jwt_token']
-                    )
-                )
-            ) as response:
-                if response.status == 200:
-                    buttons = [
-                        [
-                            InlineKeyboardButton(
-                                'Меню', callback_data='base_menu'
-                            )
-                        ]
-                    ]
-                    await update.message.reply_text(
-                        'Авторизация выполнена ✅',
-                        reply_markup=InlineKeyboardMarkup(buttons)
-                    )
-                    return ConversationHandler.END
-                await update.message.reply_text(
-                        'Ошибка при сохранении новго токена в БД 🚫'
-                    )
-                return ConversationHandler.END
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при получении JWT-токена. Повторите регистрацию.'
+    async with aiohttp.ClientSession() as session:
+        if not await check_password(
+            update,
+            context,
+            entered_password,
+            context.user_data['account']['hashed_password']
+        ):
+            return 'authorization'
+        request_body = dict(
+            grant_type='password',
+            username=context.user_data['account']['email'],
+            password=entered_password,
+            scope=''
         )
-        print(str(error))
+        async with session.post(
+            GET_JWT_TOKEN, data=request_body
+        ) as response:
+            data = await response.json()
+            context.user_data['account']['jwt_token'] = data['access_token']
+        async with session.patch(
+            USERS_REFRESH_ME,
+            headers=get_headers(context),
+            json=dict(
+                jwt_token=dict(
+                    access_token=context.user_data['account']['jwt_token']
+                )
+            )
+        ) as response:
+            if response.status == 200:
+                buttons = [
+                    [
+                        InlineKeyboardButton(
+                            'Меню', callback_data='base_menu'
+                        )
+                    ]
+                ]
+                await update.message.reply_text(
+                    'Авторизация выполнена ✅',
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                return ConversationHandler.END
+            await update.message.reply_text(
+                    'Ошибка при сохранении новго токена в БД 🚫'
+                )
+            return ConversationHandler.END
         return ConversationHandler.END
 
 
@@ -262,41 +267,33 @@ async def get_password_for_delete_account(
     )
     return DELETE_START_DELETE
 
-
+@catch_error(DELETE_ACCOUNT_ERROR, conv=True)
 @load_data_for_register_user
 async def delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
-    try:
-        async with aiohttp.ClientSession() as session:
-            if not await check_password(
-                update, context,
-                entered_password,
-                context.user_data['account']['hashed_password']
-            ):
-                return 'delete_account'
-            if not await check_authorization(update, context):
-                return ConversationHandler.END
-            async with session.delete(
-                USERS_ENDPOINT + f'/{context.user_data["account"]["id"]}',
-                headers=dict(
-                    Authorization=(
-                        f'Bearer {context.user_data["account"]["jwt_token"]}'
-                    )
-                )
-            ):
-                context.user_data.pop('account')
-                await update.message.reply_text(
-                    'Ваш акккаунт удален!'
-                    'Вы можете зарегестрироваться снова - /start'
-                )
-                return ConversationHandler.END
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при удалении аккаунта.'
-        )
-        print(str(error))
+    async with aiohttp.ClientSession() as session:
+        if not await check_password(
+            update, context,
+            entered_password,
+            context.user_data['account']['hashed_password']
+        ):
+            return 'delete_account'
+        if not await check_authorization(update, context):
+            return ConversationHandler.END
+        async with session.delete(
+            DELETE_USER_BY_ID.format(
+                id=context.user_data["account"]["id"]
+            ),
+            headers=get_headers(context)
+        ):
+            context.user_data.pop('account')
+            await update.message.reply_text(
+                'Ваш акккаунт удален!'
+                'Вы можете зарегестрироваться снова - /start'
+            )
+            return ConversationHandler.END
 
 
 async def get_password_for_edit_account(
@@ -309,45 +306,39 @@ async def get_password_for_edit_account(
     return 'choose_edit_field'
 
 
+@catch_error(SELECT_EDIT_FIELD_ERROR, conv=True)
 @load_data_for_register_user
 async def choose_edit_field(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
-    try:
-        if update.callback_query:
-            query = update.callback_query
-            await query.answer()
-            config = query
-        else:
-            config = update
-        if not await check_password(
-            config,
-            context,
-            entered_password,
-            context.user_data['account']['hashed_password']
-        ):
-            return 'choose_edit_field'
-        if not await check_authorization(config, context):
-            return ConversationHandler.END
-        await update.message.reply_text(
-            'Выберите поле для редактирования ⏳\n'
-            'После редактирования нажмите применить!',
-            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
-        )
-        return EDIT_START_EDIT_FIELD
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при выборе поля редактирования! 🚫'
-        )
-        print(str(error))
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        config = query
+    else:
+        config = update
+    if not await check_password(
+        config,
+        context,
+        entered_password,
+        context.user_data['account']['hashed_password']
+    ):
+        return 'choose_edit_field'
+    if not await check_authorization(config, context):
         return ConversationHandler.END
+    await update.message.reply_text(
+        'Выберите поле для редактирования ⏳\n'
+        'После редактирования нажмите применить!',
+        reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+    )
+    return EDIT_START_EDIT_FIELD
 
 
+@catch_error(START_EDIT_ERROR, conv=True)
 async def start_edit_field(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    try:
         query = update.callback_query
         await query.answer()
         field = query.data
@@ -355,30 +346,24 @@ async def start_edit_field(
             await query.message.reply_text(
                 'Введите ваши фамилию и имя:'
             )
-            return 'save_edit_full_name'
+            return EDIT_SAVE_EDIT_FULL_NAME
         elif field == EDIT_EMAIL_CALLBACK:
             await query.message.reply_text(
                 'Введите обновленную почту:'
             )
-            return 'save_edit_email'
+            return EDIT_SAVE_EDIT_EMAIL
         elif field == EDIT_PASSWORD:
             await query.message.reply_text(
                 'Введите новый пароль:'
             )
-            return 'save_edit_email'
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при редактировании! 🚫'
-        )
-        print(str(error))
-        return ConversationHandler.END
+            return EDIT_SAVE_EDIT_PASSWORD
 
 
+@catch_error(SAVE_FULL_NAME_ERROR)
 async def save_edit_full_name(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    try:
         full_name = update.message.text
         if not await validate_full_name(update, context, full_name):
             return EDIT_SAVE_EDIT_FULL_NAME
@@ -393,20 +378,13 @@ async def save_edit_full_name(
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
         return EDIT_START_EDIT_FIELD
-        
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при сохранении новых данных о имени и фамилии в БД 🚫'
-        )
-        print(str(error))
-        return ConversationHandler.END
 
 
+@catch_error(SAVE_EMAIL_ERROR, conv=True)
 async def save_edit_email(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    try:
         email = update.message.text
         if not await validate_email(update, context, email):
             return EDIT_SAVE_EDIT_EMAIL
@@ -419,20 +397,13 @@ async def save_edit_email(
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
         return EDIT_START_EDIT_FIELD
-        
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при сохранении новой почты в БД 🚫'
-        )
-        print(str(error))
-        return ConversationHandler.END
 
 
+@catch_error(SAVE_PASSWORD_ERROR, conv=True)
 async def save_edit_password(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    try:
         password = update.message.text
         if not await validate_password(update, context, password):
             return EDIT_SAVE_EDIT_PASSWORD
@@ -445,60 +416,43 @@ async def save_edit_password(
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
         return EDIT_START_EDIT_FIELD
-        
-    except Exception as error:
-        await update.message.reply_text(
-            'Ошибка при сохранении нового пароля в БД 🚫'
-        )
-        print(str(error))
-        return ConversationHandler.END
 
 
+@catch_error(EDIT_FINISH_ERROR)
 async def finish_edit(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.patch(
-                USERS_ME_REFRESH,
-                headers=dict(
-                    Authorization=(
-                        f'Bearer {context.user_data["account"]["jwt_token"]}'
+    async with aiohttp.ClientSession() as session:
+        async with session.patch(
+            USERS_REFRESH_ME,
+            headers=get_headers(context),
+            json=context.user_data['edit_account']
+        ) as response:
+            new_user_data = await response.json()
+            buttons=[
+                [
+                    InlineKeyboardButton(
+                        'Назад', callback_data='account_info'
                     )
-                ),
-                json=context.user_data['edit_account']
-            ) as response:
-                new_user_data = await response.json()
-                buttons=[
-                    [
-                        InlineKeyboardButton(
-                            'Назад', callback_data='account_info'
-                        )
-                    ]
                 ]
-                await query.message.reply_text(
-                    text='Данные обновлены ✅\n' + 
-                    USER_CARD.format(
-                        name=new_user_data['name'],
-                        surname=new_user_data['surname'],
-                        telegram_id=new_user_data['telegram_id'],
-                        email=new_user_data['email'],
-                        jwt_token=new_user_data['jwt_token']['access_token']
-                    ),
-                    reply_markup=InlineKeyboardMarkup(
-                        buttons
-                    )
+            ]
+            await query.message.reply_text(
+                text='Данные обновлены ✅\n' + 
+                USER_CARD.format(
+                    name=new_user_data['name'],
+                    surname=new_user_data['surname'],
+                    telegram_id=new_user_data['telegram_id'],
+                    email=new_user_data['email'],
+                    jwt_token=new_user_data['jwt_token']['access_token']
+                ),
+                reply_markup=InlineKeyboardMarkup(
+                    buttons
                 )
-                return ConversationHandler.END
-    except Exception as error:
-        await query.message.reply_text(
-            'Ошибка при сохранении изменений аккаунта 🚫'
-        )
-        print(str(error))
-        return ConversationHandler.END
+            )
+            return ConversationHandler.END
 
 
 def handlers_installer(
@@ -598,7 +552,7 @@ def handlers_installer(
                 MessageHandler(MESSAGE_HANDLERS, save_edit_email)
             ],
             EDIT_SAVE_EDIT_PASSWORD: [
-                MessageHandler(MESSAGE_HANDLERS, save_edit_email)
+                MessageHandler(MESSAGE_HANDLERS, save_edit_password)
             ],
             EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')

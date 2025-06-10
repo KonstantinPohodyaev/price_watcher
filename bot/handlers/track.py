@@ -5,13 +5,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           ContextTypes, ConversationHandler, MessageHandler)
 
-from bot.endpoints import (
-    CREATE_NEW_TRACK, USERS_TRACKS, USERS_TRACKS_BY_ID,
-    GET_TRACKS_PRICE_HISTORY
-)
-from bot.handlers.callback_data import (ADD_TRACK, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES,
-                                        CHECK_HISTORY)
+from bot.endpoints import (CREATE_NEW_TRACK, GET_TRACKS_PRICE_HISTORY,
+                           USERS_TRACKS, USERS_TRACKS_BY_ID)
+from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
+                                        SHOW_ALL_TRACK, WILDBERRIES)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
@@ -84,11 +81,7 @@ async def show_all(
     async with aiohttp.ClientSession() as session:
         async with session.get(
             USERS_TRACKS,
-            headers=dict(
-            Authorization=(
-                f'Bearer {context.user_data["account"]["jwt_token"]}'
-            )
-        )
+            headers=get_headers(context)
         ) as response:
             if response.status == HTTPStatus.UNAUTHORIZED:
                 await query.message.reply_text(
@@ -148,7 +141,7 @@ async def get_new_target_price(
     return 'save_new_target_price'
 
 
-@catch_error(TRACK_REFRESH_ERROR)
+@catch_error(TRACK_REFRESH_ERROR, conv=True)
 async def target_price_refresh(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -164,11 +157,7 @@ async def target_price_refresh(
         )
         async with session.patch(
             USERS_TRACKS_BY_ID.format(id=context.user_data['track_id']),
-            headers=dict(
-                Authorization=(
-                    f'Bearer {context.user_data["account"]["jwt_token"]}'
-                )
-            ),
+            headers=get_headers(context),
             json=refresh_data
         ):
             buttons = [
@@ -232,7 +221,7 @@ async def add_target_price(
     return ADD_TRACK_CREATE_NEW_TRACK
 
 
-@catch_error(CREATE_NEW_TRACK_ERROR)
+@catch_error(CREATE_NEW_TRACK_ERROR, conv=True)
 async def create_new_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -360,16 +349,6 @@ def handlers_installer(
             MessageHandler(MESSAGE_HANDLERS, create_new_track)
         ]
     )
-    # check_history_conversation_handler = ConversationHandler(
-    #     entry_points=[
-    #         CallbackQueryHandler(
-    #             check_track_history, pattern=f'^{CHECK_HISTORY}_'
-    #         )
-    #     ],
-    #     states={
-            
-    #     }
-    # )
     application.add_handler(
         refresh_target_price_conversation_handler
     )

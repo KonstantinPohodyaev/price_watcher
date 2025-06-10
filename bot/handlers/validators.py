@@ -128,7 +128,7 @@ async def validate_password(
     ):
         await update.message.reply_text(WRONG_PASSWORD_PATTERN_ERROR)
         return False
-    elif not PASSWORD_MIN_LENGTH < len(password) < PASSWORD_MAX_LENGTH:
+    elif not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
         await update.message.reply_text(
             WRONG_PASSWORD_LENGTH_ERROR.format(
                 min=PASSWORD_MIN_LENGTH,
