@@ -1,7 +1,10 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    InlineKeyboardButton, InlineKeyboardMarkup, Update,
+    ReplyKeyboardRemove
+)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
@@ -9,13 +12,16 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
 from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, DELETE_USER_BY_ID,
                            USERS_REFRESH_ME)
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
-                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD)
+                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
+                                        MENU)
 from bot.handlers.constants import MESSAGE_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
+from bot.handlers.buttons import REPLY_KEYBOARD
+
 
 # Состояния для ConversationHandler
 
@@ -40,6 +46,7 @@ EDIT_FINISH_EDIT = 'finish_edit'
 ACCOUNT_INFO = """
 Настройки аккаунта
 __________________
+/load_data - загрузить актуальные данные аккаунта
 /edit_account - редактировать аккаунт
 /delete_account - удалить аккаунт
 /account_data - посмотреть данные аккаунта
@@ -89,6 +96,7 @@ EDIT_BUTTONS = [
 ]
 
 
+@load_data_for_register_user
 async def account_info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -107,10 +115,24 @@ async def account_info(
 
 
 @load_data_for_register_user
+async def load_account_data(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    buttons = [
+        [
+            InlineKeyboardButton('Меню 📦', callback_data=MENU)
+        ]
+    ]
+    await update.message.reply_text(
+        'Данные аккаунта успешно обновлены! ✅',
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+
+@load_data_for_register_user
 async def check_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    # buttons = 
     await update.message.reply_text(
         text=f'```{context.user_data["account"]}```',
         parse_mode='MarkdownV2'
@@ -168,7 +190,8 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if response.status == HTTPStatus.CREATED:
                 user = await response.json()
                 await update.message.reply_text(
-                    'Регистрация закончена!'
+                    'Регистрация закончена!',
+                    reply_markup=REPLY_KEYBOARD
                 )
                 buttons = [
                     [
@@ -291,7 +314,8 @@ async def delete_account(
             context.user_data.pop('account')
             await update.message.reply_text(
                 'Ваш акккаунт удален!'
-                'Вы можете зарегестрироваться снова - /start'
+                'Вы можете зарегестрироваться снова - /start',
+                reply_markup=ReplyKeyboardRemove()
             )
             return ConversationHandler.END
 
@@ -472,6 +496,9 @@ def handlers_installer(
     )
     application.add_handler(
         CommandHandler('account_data', check_account_data)
+    )
+    application.add_handler(
+        CommandHandler('load_data', load_account_data)
     )
     registration_conversation_handler = ConversationHandler(
         entry_points=[

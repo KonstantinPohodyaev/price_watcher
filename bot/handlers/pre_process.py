@@ -36,9 +36,7 @@ def load_data_for_register_user(handler_func):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GET_USER_BY_TELEGRAM_ID,
-                json=dict(
-                    telegram_id=config.message.from_user.id
-                )
+                json=dict(telegram_id=config.message.from_user.id)
             ) as response:
                 user_data = await response.json()
                 if user_data:
@@ -52,6 +50,9 @@ def load_data_for_register_user(handler_func):
                         context.user_data['account'][field] = value
         return await handler_func(update, context)
     return wrapper
+
+
+
 
 
 def check_auth(handler_func):
