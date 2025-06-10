@@ -81,11 +81,7 @@ async def show_all(
     async with aiohttp.ClientSession() as session:
         async with session.get(
             USERS_TRACKS,
-            headers=dict(
-            Authorization=(
-                f'Bearer {context.user_data["account"]["jwt_token"]}'
-            )
-        )
+            headers=get_headers(context)
         ) as response:
             if response.status == HTTPStatus.UNAUTHORIZED:
                 await query.message.reply_text(
@@ -161,11 +157,7 @@ async def target_price_refresh(
         )
         async with session.patch(
             USERS_TRACKS_BY_ID.format(id=context.user_data['track_id']),
-            headers=dict(
-                Authorization=(
-                    f'Bearer {context.user_data["account"]["jwt_token"]}'
-                )
-            ),
+            headers=get_headers(context),
             json=refresh_data
         ):
             buttons = [

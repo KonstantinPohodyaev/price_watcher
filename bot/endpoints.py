@@ -7,9 +7,9 @@ GET_USER_BY_TELEGRAM_ID = f'{PROTOCOL}://{DOMEN}/users/check-telegram-id'
 GET_USER_BY_EMAIL = f'{PROTOCOL}://{DOMEN}/users/check-email'
 REGISTER_USER = f'{PROTOCOL}://{DOMEN}/auth/register'
 GET_JWT_TOKEN = f'{PROTOCOL}://{DOMEN}/auth/jwt/login'
-USERS_ENDPOINT = f'{PROTOCOL}://{DOMEN}/users'
+DELETE_USER_BY_ID = f'{PROTOCOL}://{DOMEN}/users/{{id}}'
 USERS_GET_ME = f'{PROTOCOL}://{DOMEN}/users/me'
-USERS_ME_REFRESH = f'{PROTOCOL}://{DOMEN}/users/me/refresh'
+USERS_REFRESH_ME = f'{PROTOCOL}://{DOMEN}/users/me/refresh'
 
 # Эндпоинты Track
 USERS_TRACKS = f'{PROTOCOL}://{DOMEN}/tracks'

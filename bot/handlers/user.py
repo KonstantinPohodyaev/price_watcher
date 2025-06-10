@@ -6,8 +6,8 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, USERS_ENDPOINT,
-                           USERS_ME_REFRESH)
+from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, DELETE_USER_BY_ID,
+                           USERS_REFRESH_ME)
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD)
 from bot.handlers.constants import MESSAGE_HANDLERS
@@ -231,7 +231,7 @@ async def authorization(
             data = await response.json()
             context.user_data['account']['jwt_token'] = data['access_token']
         async with session.patch(
-            USERS_ME_REFRESH,
+            USERS_REFRESH_ME,
             headers=get_headers(context),
             json=dict(
                 jwt_token=dict(
@@ -283,12 +283,10 @@ async def delete_account(
         if not await check_authorization(update, context):
             return ConversationHandler.END
         async with session.delete(
-            USERS_ENDPOINT + f'/{context.user_data["account"]["id"]}',
-            headers=dict(
-                Authorization=(
-                    f'Bearer {context.user_data["account"]["jwt_token"]}'
-                )
-            )
+            DELETE_USER_BY_ID.format(
+                id=context.user_data["account"]["id"]
+            ),
+            headers=get_headers(context)
         ):
             context.user_data.pop('account')
             await update.message.reply_text(
@@ -429,12 +427,8 @@ async def finish_edit(
     await query.answer()
     async with aiohttp.ClientSession() as session:
         async with session.patch(
-            USERS_ME_REFRESH,
-            headers=dict(
-                Authorization=(
-                    f'Bearer {context.user_data["account"]["jwt_token"]}'
-                )
-            ),
+            USERS_REFRESH_ME,
+            headers=get_headers(context),
             json=context.user_data['edit_account']
         ) as response:
             new_user_data = await response.json()
