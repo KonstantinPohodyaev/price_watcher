@@ -1,13 +1,16 @@
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
                       ReplyKeyboardMarkup, Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          CommandHandler, ContextTypes, filters)
+                          CommandHandler, ContextTypes, filters,
+                          MessageHandler)
 
 from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
-                                        START_REGISTRATION)
+                                        START_REGISTRATION,
+                                        START_AUTHORIZATION)
 from bot.handlers.constants import PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import catch_error
+from bot.handlers.utils import catch_error, get_interaction
+from bot.handlers.buttons import REPLY_KEYBOARD
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -15,8 +18,8 @@ START_ERROR = 'К сожалению возникла ошибка при зап
 
 INFO = """
 <u>Проект Price Watcher</u>
-_____________________________
-здесь вы можете отслеживать цены по интересующим вас товарам
+________________________________________________________
+Здесь вы можете отслеживать цены по интересующим вас товарам
 на популярных маркетплейсах и получать уведомления,
 если цена упала до желаемой!
 /start - запуск бота
@@ -27,19 +30,14 @@ _____________________________
 START_MESSAGE = """
 <b>Привет</b>, <code>{name}</code>!
 Чем я тебе могу помочь? 👋
+_____________________________________
 /info - информация о боте
 """
-
-MAIN_REPLY_BUTTONS = ['Старт 🔥', 'Авторизация 🔐', 'Ваш аккаунт 📱']
 
 
 @load_data_for_register_user
 @catch_error(START_ERROR)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    main_keyboard = ReplyKeyboardMarkup(
-        [MAIN_REPLY_BUTTONS],
-        resize_keyboard=True
-    )
     if context.user_data.get('account'):
         if context.user_data['account'].get('jwt_token'):
             buttons = [
@@ -49,9 +47,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 ]
             ]
+        else:
+            buttons = [
+                [
+                   InlineKeyboardButton(
+                        'Авторизация 📦', callback_data=START_AUTHORIZATION
+                    ) 
+                ]
+            ]
         await update.message.reply_text(
             'Загрузка интерфейса...',
-            reply_markup=main_keyboard
+            reply_markup=REPLY_KEYBOARD
         )
         await update.message.reply_text(
             text=START_MESSAGE.format(
@@ -87,8 +93,7 @@ async def info(
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    query = update.callback_query
-    await query.answer()
+    interaction = await get_interaction(update)
     buttons = [
         [
             InlineKeyboardButton(
@@ -104,7 +109,7 @@ async def menu(
         ],
         
     ]
-    await query.message.reply_text(
+    await interaction.message.reply_text(
         'Выберите интересующий вас пункт',
         reply_markup=InlineKeyboardMarkup(buttons)
     )
@@ -121,4 +126,9 @@ def handlers_installer(
     )
     application.add_handler(
         CallbackQueryHandler(menu, pattern=f'^{MENU}$')
+    )
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & filters.Regex('^Меню 🔥$'), menu
+        )
     )
