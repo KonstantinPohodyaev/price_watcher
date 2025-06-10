@@ -6,9 +6,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.jwt_auth import jwt_token_crud
-from src.models.jwt_auth import JWTToken
 from src.models.track import Track
 from src.models.user import User
+from src.database.enums import Marketplace
 
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
 USER_NOT_EXISTS_BY_ID_ERROR = 'Пользователя с id = {id} не существует!'
@@ -27,7 +27,14 @@ NOT_NEGATIVE_TARGET_PRICE_ERROR = (
 CHECK_UNIQUE_JWT_TOKEN_ERROR = (
     'Токен для юзера с id = {user_id} уже был создан.'
 )
-
+VALIDATE_MARKET_PLACE_ERROR = (
+    'Маркетплейс {marketplace} пока '
+    'еще не обслуживается нашим сервисом. '
+    'Допустимые: {valid_marketplaces}'
+)
+TRACK_WITH_ARTICLE_AND_MARKETPLACE_NOT_EXISTS_ERROR = (
+    'Товара с артикулом {article} и маркетплейсом {marketplace} не существует. '
+)
 
 async def check_object_exists_by_id(
     object_id: int,
@@ -142,11 +149,36 @@ async def check_unique_jwt_token_exists_by_user_id(
         user_id, session
     )
     return jwt_token
-    # if jwt_token:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail=CHECK_UNIQUE_JWT_TOKEN_ERROR.format(
-    #             user_id=user_id
-    #         )
-    #     )
-    # return jwt_token
+
+
+def validate_marketplace(
+    marketplace: str
+):
+    """Валидатор поля marketplace."""
+    try:
+        Marketplace(marketplace)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=VALIDATE_MARKET_PLACE_ERROR.format(
+                marketplace=marketplace,
+                valid_marketplaces=[
+                    marketplace.value for marketplace in Marketplace
+                ]
+            )
+        )
+
+
+def check_track_with_marketplace_and_article_exists(
+    track: Track,
+    article: str,
+    marketplace: str
+):
+    if not track:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=TRACK_WITH_ARTICLE_AND_MARKETPLACE_NOT_EXISTS_ERROR.format(
+                article=article,
+                marketplace=marketplace
+            )
+        )

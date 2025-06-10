@@ -296,6 +296,16 @@ async def check_track_history(
             )
 
 
+async def confirm_track_delete(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    query = update.callback_query
+    await query.answer()
+    await query.message.reply_text(
+        f'Вы точно хотите удалить товар с id ='
+    )
+
+
 def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
@@ -349,6 +359,11 @@ def handlers_installer(
             MessageHandler(MESSAGE_HANDLERS, create_new_track)
         ]
     )
+    # delete_track_conversation_handler = ConversationHandler(
+    #     entry_points=[
+    #         CallbackQueryHandler()
+    #     ]
+    # )
     application.add_handler(
         refresh_target_price_conversation_handler
     )
