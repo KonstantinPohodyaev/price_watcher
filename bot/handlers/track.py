@@ -44,6 +44,14 @@ TRACK_REFRESH_ERROR = (
     'Что-то пошло не так при обновлении отслеживаемого товара! ❌\n'
     'Попробуйте еще раз!'
 )
+CREATE_BAD_REQUEST_ERROR = """
+{error_message}
+Попробуйте указать данные для товара заново.
+"""
+OUTDATED_AUTHORIZATION_ERROR = """
+'Повторите авторизацию! /auth'
+'Срок действия истек 😢'
+"""
 SHORT_TRACK_CARD = """
 <b>{title}</b> - <code>{article}</code>
 _________________________
@@ -92,8 +100,7 @@ async def show_all(
         ) as response:
             if response.status == HTTPStatus.UNAUTHORIZED:
                 await query.message.reply_text(
-                    'Повторите авторизацию! /auth\n'
-                    'Срок действия истек 😢\n'
+                    OUTDATED_AUTHORIZATION_ERROR
                 )
                 return
             main_buttons = [
@@ -240,6 +247,20 @@ async def create_new_track(
             headers=get_headers(context),
             json=context.user_data['new_track']
         ) as response:
+            if response.status == HTTPStatus.UNAUTHORIZED:
+                await update.message.reply_text(
+                    OUTDATED_AUTHORIZATION_ERROR
+                )
+                return ConversationHandler.END
+            elif response.status == HTTPStatus.BAD_REQUEST:
+                error_data = await response.json()
+                await update.message.reply_text(
+                    CREATE_BAD_REQUEST_ERROR.format(
+                        error_message=error_data.get('detail')
+                    )
+                )
+                await select_marketplace(update, context)
+                return ADD_TRACK_ADD_ARTICLE
             new_track = await response.json()
             await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
             await update.message.reply_text(
