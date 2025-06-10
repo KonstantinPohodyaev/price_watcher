@@ -44,6 +44,9 @@ TRACK_REFRESH_ERROR = (
     'Что-то пошло не так при обновлении отслеживаемого товара! ❌\n'
     'Попробуйте еще раз!'
 )
+PRICE_HISTORY_ERROR = (
+    'Ошибка при загрузке истории товара! ❌'
+)
 CREATE_BAD_REQUEST_ERROR = """
 {error_message}
 Попробуйте указать данные для товара заново.
@@ -84,8 +87,8 @@ _________________________
 """
 
 
-@load_data_for_register_user
 @catch_error(SHOW_ALL_ERROR)
+@load_data_for_register_user
 async def show_all(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -157,6 +160,7 @@ async def get_new_target_price(
 
 
 @catch_error(TRACK_REFRESH_ERROR, conv=True)
+@load_data_for_register_user
 async def target_price_refresh(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -237,6 +241,7 @@ async def add_target_price(
 
 
 @catch_error(CREATE_NEW_TRACK_ERROR, conv=True)
+@load_data_for_register_user
 async def create_new_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -280,6 +285,8 @@ async def create_new_track(
             return ConversationHandler.END
 
 
+@catch_error(PRICE_HISTORY_ERROR)
+@load_data_for_register_user
 async def check_track_history(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -351,8 +358,8 @@ async def confirm_track_delete(
     )
     return FINISH_DELETE_TRACK
 
-
 @catch_error(DELETE_TRACK_ERROR, conv=True)
+@load_data_for_register_user
 async def finish_delete_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):

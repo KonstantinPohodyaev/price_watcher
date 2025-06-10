@@ -441,8 +441,8 @@ async def save_edit_password(
         )
         return EDIT_START_EDIT_FIELD
 
-
 @catch_error(EDIT_FINISH_ERROR)
+@load_data_for_register_user
 async def finish_edit(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
