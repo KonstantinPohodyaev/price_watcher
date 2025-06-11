@@ -64,6 +64,7 @@ class BaseTrack(TargetAndCurrentPriceFields):
     )
     last_checked_at: Optional[datetime] = Field(None)
     is_active: Optional[bool] = Field(None)
+    notified: Optional[bool] = Field(None)
 
     class Config:
         title = BASE_TRACK_TITLE

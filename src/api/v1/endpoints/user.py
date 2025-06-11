@@ -246,7 +246,8 @@ router.include_router(
 )
 async def check_existence_user_by_telegram_id(
     telegram_id_schema: CheckTGID,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ):
     user = await user_crud.get_user_by_telegram_id(
         telegram_id_schema.telegram_id, session
@@ -261,7 +262,8 @@ async def check_existence_user_by_telegram_id(
 )
 async def check_existence_user_by_email(
     email_schema: CheckEmail,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ):
     user = await user_crud.get_user_by_email(
         email_schema.email, session

@@ -42,6 +42,9 @@ class Track(Base):
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
+    notified: Mapped[bool] = mapped_column(
+        default=False
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey(
             'user.id', ondelete='CASCADE'

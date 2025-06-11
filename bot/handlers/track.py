@@ -8,8 +8,7 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
 from bot.endpoints import (CREATE_NEW_TRACK, GET_TRACKS_PRICE_HISTORY,
                            USERS_TRACKS, USERS_TRACKS_BY_ID, DELETE_TRACK_BY_ID)
 from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES,
-                                        CONFIRM_TRACK_DELETE)
+                                        SHOW_ALL_TRACK, WILDBERRIES)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
