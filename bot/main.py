@@ -1,5 +1,6 @@
 import os
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder
 
@@ -8,6 +9,7 @@ from bot.handlers import (base_installer_handlers, track_handler_installer,
 
 load_dotenv()
 
+scheduler = AsyncIOScheduler()
 
 def main():
     application = ApplicationBuilder().token(

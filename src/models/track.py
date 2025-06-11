@@ -68,3 +68,21 @@ class Track(Base):
             name=UNIQUE_ARTICLE_MARKETPLACE_USER_ID_CONSTRAINT_NAME
         ),
     )
+
+    # def to_dict(self):
+    #     """Сериализатор для модели."""
+    #     return dict(
+    #         id=self.id,
+    #         marketplace=self.marketplace,
+    #         article=self.article,
+    #         title=self.title,
+    #         target_price=self.target_price,
+    #         current_price=self.current_price,
+    #         last_checked_at=self.last_checked_at,
+    #         is_active=self.is_active,
+    #         notified=self.notified,
+    #         user_id=self.user_id,
+    #         is_active=self.is_active,
+    #         notified=self.notified,
+    #         user_id=self.user_id
+    #     )

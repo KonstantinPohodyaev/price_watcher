@@ -93,11 +93,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         commit_on: bool = True
     ) -> ModelType:
         """Обновляет существующий объект (частичное обновение)."""
-        current_data = jsonable_encoder(db_object)
         update_data = update_schema.model_dump(exclude_unset=True)
-        for field in current_data:
+        for field, value in update_data.items():
             if field in update_data:
-                setattr(db_object, field, update_data[field])
+                setattr(db_object, field, value)
         try:
             session.add(db_object)
             if commit_on:
