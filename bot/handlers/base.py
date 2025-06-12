@@ -1,19 +1,20 @@
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
                       ReplyKeyboardMarkup, Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          CommandHandler, ContextTypes, filters,
-                          MessageHandler)
+                          CommandHandler, ContextTypes, MessageHandler,
+                          filters)
 
+from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
-                                        START_REGISTRATION,
-                                        START_AUTHORIZATION, START_NOTIFICATIONS)
+                                        START_AUTHORIZATION,
+                                        START_NOTIFICATIONS,
+                                        START_REGISTRATION)
 from bot.handlers.constants import PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
-from bot.handlers.utils import catch_error, get_interaction, check_authorization
-from bot.handlers.buttons import REPLY_KEYBOARD
-from bot.scheduler import (
-    periodic_check, PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL
-)
+from bot.handlers.utils import (catch_error, check_authorization,
+                                get_interaction)
+from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,
+                           periodic_check)
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 

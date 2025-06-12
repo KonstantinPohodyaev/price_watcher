@@ -5,10 +5,9 @@ import aiohttp
 from telegram import Bot
 from telegram.ext import ContextTypes
 
-from bot.endpoints import USERS_TRACKS
-from bot.endpoints import REFRESH_DATA_FOR_EXISTEN_TRACK, UPDATE_TRACK_BY_ID
+from bot.endpoints import (REFRESH_DATA_FOR_EXISTEN_TRACK, UPDATE_TRACK_BY_ID,
+                           USERS_TRACKS)
 from bot.handlers.utils import decode_jwt_token, get_headers
-
 
 SUCCESS_PRICE = (
     '🎉 Цена на товар {article} опустилась до нужной!'

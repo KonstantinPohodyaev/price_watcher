@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.v1.utils import get_wildberries_product_data, wildberries_parse
-from src.api.v1.validators import (check_track_exists_by_id,
-                                   check_unique_track_by_marketplace_article,
-                                   not_negative_target_price, validate_marketplace,
-                                   check_track_with_marketplace_and_article_exists)
+from src.api.v1.validators import (
+    check_track_exists_by_id, check_track_with_marketplace_and_article_exists,
+    check_unique_track_by_marketplace_article, not_negative_target_price,
+    validate_marketplace)
 from src.core.user import current_user
 from src.crud.price_history import price_history_crud
 from src.crud.track import track_crud

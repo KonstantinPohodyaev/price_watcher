@@ -1,13 +1,13 @@
-import re
 import os
+import re
 
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from cryptography.fernet import Fernet
 from telegram import (CallbackQuery, InlineKeyboardButton,
                       InlineKeyboardMarkup, Update)
 from telegram.ext import ContextTypes, ConversationHandler
-from cryptography.fernet import Fernet
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 from bot.handlers.callback_data import CHECK_HISTORY
