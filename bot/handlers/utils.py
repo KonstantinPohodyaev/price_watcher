@@ -1,8 +1,10 @@
+import os
 import re
 
 from aiohttp import ClientSession
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from cryptography.fernet import Fernet
 from telegram import (CallbackQuery, InlineKeyboardButton,
                       InlineKeyboardMarkup, Update)
 from telegram.ext import ContextTypes, ConversationHandler
@@ -11,6 +13,13 @@ from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 from bot.handlers.callback_data import CHECK_HISTORY
 
 password_hasher = PasswordHasher()
+
+fernet = Fernet(
+    os.getenv(
+        'JWT_SECRET_KEY',
+        'A8zOVVp4FMb93RD03n0O25FwAYmTxmTQhF3kPBnLJ6E='
+    )
+)
 
 # Вспомогательные утилиты.
 def catch_error(error_message: str, conv=False):
@@ -54,12 +63,12 @@ async def check_password(
 
 
 async def check_authorization(
-    update: Update,
+    interaction: Update | CallbackQuery,
     context: ContextTypes.DEFAULT_TYPE,
 ):
     """Проверяет, авторизаван ли пользователь."""
-    if not context.user_data['account'].get('jwt_token'):
-        await update.message.reply_text(
+    if not context.user_data.get('account', {}).get('jwt_token'):
+        await interaction.message.reply_text(
             'Для совершения этой операции необходима авторизация /auth ⚠️'
         )
         return False
@@ -109,6 +118,11 @@ def get_headers(
             f'Bearer {context.user_data["account"]["jwt_token"]}'
         )
     )
+
+
+def decode_jwt_token(encoded_jwt_token):
+    decoded_jwt_token = fernet.decrypt(encoded_jwt_token.encode())
+    return decoded_jwt_token.decode()
 
 
 # Утилиты для работы с клавиатурами.

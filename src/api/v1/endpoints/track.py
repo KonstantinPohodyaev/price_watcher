@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.v1.utils import get_wildberries_product_data, wildberries_parse
-from src.api.v1.validators import (check_track_exists_by_id,
-                                   check_unique_track_by_marketplace_article,
-                                   not_negative_target_price, validate_marketplace,
-                                   check_track_with_marketplace_and_article_exists)
+from src.api.v1.validators import (
+    check_track_exists_by_id, check_track_with_marketplace_and_article_exists,
+    check_unique_track_by_marketplace_article, not_negative_target_price,
+    validate_marketplace)
 from src.core.user import current_user
 from src.crud.price_history import price_history_crud
 from src.crud.track import track_crud
@@ -51,7 +51,8 @@ async def get_users_tracks(
 )
 async def get_track_by_id(
     track_id: int,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ) -> TrackDB:
     """Получает конкретный объект Track по его id."""
     await check_track_exists_by_id(track_id, track_crud, session)
@@ -67,7 +68,8 @@ async def get_track_by_id(
 async def get_track_by_artice_and_marketplace(
     marketplace: str,
     article: str,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ):
     validate_marketplace(marketplace)
     track = await track_crud.get_track_by_artice_and_marketplace(
@@ -137,7 +139,8 @@ async def create_track(
 async def update_track(
     track_id: int,
     update_track_schema: TrackUpdate,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ) -> TrackDB:
     """Обновляет существующий объект Track по id (вручную)."""
     await check_track_exists_by_id(track_id, track_crud, session)
@@ -155,7 +158,8 @@ async def update_track(
 )
 async def refresh_data_for_existen_track(
     track_id: int,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ):
     """Обновляет данные о товаре (для онлайн режима)."""
     track = await track_crud.get(track_id, session)
@@ -177,7 +181,8 @@ async def refresh_data_for_existen_track(
 )
 async def compare_target_and_current_price(
     track_id: int,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ):
     """Сравнивает текущую и целевую цену товара."""
     track = await track_crud.get(track_id, session)
@@ -193,7 +198,8 @@ async def compare_target_and_current_price(
 )
 async def delete_track(
     track_id: int,
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
 ) -> TrackDB:
     await check_track_exists_by_id(track_id, track_crud, session)
     return await track_crud.delete(

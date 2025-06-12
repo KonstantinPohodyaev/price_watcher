@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
+from bot.handlers.utils import get_interaction
 
 fernet = Fernet(
     os.getenv(
@@ -25,18 +26,17 @@ def load_data_for_register_user(handler_func):
 
         Срабатывает перед выполнением основного хандлера handler_func.
         """
-        if update.callback_query:
-            query = update.callback_query
-            await query.answer()
-            config = query
-        else:
-            config = update
+        interaction = await get_interaction(update)
         if not context.user_data.get('account'):
             context.user_data['account'] = dict()
+        if isinstance(interaction, Update):
+            telegram_id = interaction.message.from_user.id
+        else:
+            telegram_id = interaction.from_user.id
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GET_USER_BY_TELEGRAM_ID,
-                json=dict(telegram_id=config.message.from_user.id)
+                json=dict(telegram_id=telegram_id)
             ) as response:
                 user_data = await response.json()
                 if user_data:

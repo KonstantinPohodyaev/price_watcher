@@ -13,12 +13,17 @@ class UserRead(schemas.BaseUser[int]):
     surname: Optional[str]
     hashed_password: Optional[str]
     jwt_token: Optional[JWTRead]
+    chat_id: Optional[str]
+
+    class Config:
+        from_attributes = True
 
 
 class UserCreate(schemas.BaseUserCreate):
     telegram_id: Optional[int] = Field(None)
     name: Optional[str] = Field(None)
     surname: Optional[str] = Field(None)
+    chat_id: Optional[str] = Field(None)
 
 
 class UserUpdate(schemas.BaseUserUpdate):
@@ -35,6 +40,8 @@ class ShortUserRead(BaseModel):
     name: Optional[str]
     surname: Optional[str]
     is_superuser: bool
+    chat_id: Optional[str]
+    jwt_token: Optional[JWTTokenUpdate] = Field(None)
 
 
 class CheckTGID(BaseModel):

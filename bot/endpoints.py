@@ -19,6 +19,8 @@ GET_TRACK_BY_ARTICLE_AND_MARKETPLACE = (
     f'{PROTOCOL}://{DOMEN}/tracks/{{marketplace}}/{{article}}'
 )
 DELETE_TRACK_BY_ID = f'{PROTOCOL}://{DOMEN}/tracks/{{id}}'
+UPDATE_TRACK_BY_ID = f'{PROTOCOL}://{DOMEN}/tracks/{{id}}'
+REFRESH_DATA_FOR_EXISTEN_TRACK = f'{PROTOCOL}://{DOMEN}/tracks/refresh/{{id}}'
 
 # Эндпоинты PriceHistory
 GET_TRACKS_PRICE_HISTORY = f'{PROTOCOL}://{DOMEN}/price-history/{{track_id}}'

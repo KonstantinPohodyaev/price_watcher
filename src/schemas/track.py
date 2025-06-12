@@ -24,6 +24,10 @@ TRACK_UPDATE_TITLE = (
     'Pydantic-схема для обновления экземпляра Track в БД.'
 )
 
+TRACK_UPDATE_CURRENT_PRICE_TITLE = (
+    'Pydantic-схема для обновления текущей цены Track в БД.'
+)
+
 DECIMAL_ZERO = '0.00'
 DECIMAL_QUANTIZE = '0.00'
 DECIMAL_PLACES = 2
@@ -64,6 +68,7 @@ class BaseTrack(TargetAndCurrentPriceFields):
     )
     last_checked_at: Optional[datetime] = Field(None)
     is_active: Optional[bool] = Field(None)
+    notified: Optional[bool] = Field(None)
 
     class Config:
         title = BASE_TRACK_TITLE
@@ -100,6 +105,13 @@ class TrackUpdate(BaseTrack):
 
     class Config:
         title = TRACK_UPDATE_TITLE
+
+
+class TrackUpdateCurrentPrice(TargetAndCurrentPriceFields):
+    article: str
+
+    class Config:
+        title = TRACK_UPDATE_CURRENT_PRICE_TITLE
 
 
 class TrackFilterSchema(BaseModel):

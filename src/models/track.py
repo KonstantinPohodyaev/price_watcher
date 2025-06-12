@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, func, UniqueConstraint
+from sqlalchemy import ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.annotations import int_pk, not_null_decimal, not_null_str
@@ -42,6 +42,9 @@ class Track(Base):
     is_active: Mapped[bool] = mapped_column(
         default=True
     )
+    notified: Mapped[bool] = mapped_column(
+        default=False
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey(
             'user.id', ondelete='CASCADE'
@@ -65,3 +68,21 @@ class Track(Base):
             name=UNIQUE_ARTICLE_MARKETPLACE_USER_ID_CONSTRAINT_NAME
         ),
     )
+
+    # def to_dict(self):
+    #     """Сериализатор для модели."""
+    #     return dict(
+    #         id=self.id,
+    #         marketplace=self.marketplace,
+    #         article=self.article,
+    #         title=self.title,
+    #         target_price=self.target_price,
+    #         current_price=self.current_price,
+    #         last_checked_at=self.last_checked_at,
+    #         is_active=self.is_active,
+    #         notified=self.notified,
+    #         user_id=self.user_id,
+    #         is_active=self.is_active,
+    #         notified=self.notified,
+    #         user_id=self.user_id
+    #     )

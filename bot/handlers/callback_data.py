@@ -5,6 +5,7 @@ MENU = 'base_menu'
 START_REGISTRATION = 'start_registration'
 START_AUTHORIZATION = 'authorization'
 SHOW_ALL_TRACK = 'track_show_all'
+START_NOTIFICATIONS = 'base_start_notifications'
 
 # модуль handlers.track
 REFRESH_TARGET_PRICE = 'track_target_price_refresh'

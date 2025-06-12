@@ -1,16 +1,15 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import (
-    InlineKeyboardButton, InlineKeyboardMarkup, Update,
-    ReplyKeyboardRemove
-)
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
+                      ReplyKeyboardRemove, Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (GET_JWT_TOKEN, REGISTER_USER, DELETE_USER_BY_ID,
+from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
                            USERS_REFRESH_ME)
+from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
                                         MENU)
@@ -20,8 +19,6 @@ from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
-from bot.handlers.buttons import REPLY_KEYBOARD
-
 
 # Состояния для ConversationHandler
 
@@ -183,6 +180,7 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return 'password'
     context.user_data['account']['password'] = entered_password
     context.user_data['account']['telegram_id'] = update.message.from_user.id
+    context.user_data['account']['chat_id'] = str(update.message.chat.id)
     async with aiohttp.ClientSession() as session:
         async with session.post(
             REGISTER_USER, json=context.user_data['account']

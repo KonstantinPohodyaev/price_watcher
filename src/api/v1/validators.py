@@ -6,9 +6,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.jwt_auth import jwt_token_crud
+from src.database.enums import Marketplace
 from src.models.track import Track
 from src.models.user import User
-from src.database.enums import Marketplace
 
 TRACK_NOT_EXISTS_BY_ID_ERROR = 'Товара с id = {id} не существует!'
 USER_NOT_EXISTS_BY_ID_ERROR = 'Пользователя с id = {id} не существует!'
