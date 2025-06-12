@@ -17,6 +17,9 @@ class JWTBase(BaseModel):
 class JWTRead(JWTBase):
     pass
 
+    class Config:
+        from_attributes = True
+
 
 class JWTTokenCreate(JWTBase):
     pass

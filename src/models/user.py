@@ -40,6 +40,9 @@ class User(Base, SQLAlchemyBaseUserTable):
     hashed_password: Mapped[str] = mapped_column(
         nullable=False
     )
+    chat_id: Mapped[str] = mapped_column(
+        nullable=True
+    )
     tracks: Mapped[list['Track']] = relationship(
         'Track',
         back_populates='user',

@@ -183,6 +183,7 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return 'password'
     context.user_data['account']['password'] = entered_password
     context.user_data['account']['telegram_id'] = update.message.from_user.id
+    context.user_data['account']['chat_id'] = str(update.message.chat.id)
     async with aiohttp.ClientSession() as session:
         async with session.post(
             REGISTER_USER, json=context.user_data['account']
