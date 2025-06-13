@@ -14,9 +14,10 @@ from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
                                         MENU)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user
+from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
-                                check_password, get_headers, get_interaction)
+                                check_password, get_headers, get_interaction,
+                                add_message_to_delete_list)
 from bot.handlers.validators import (validate_email, validate_full_name,
                                      validate_password)
 
@@ -108,7 +109,7 @@ EDIT_BUTTONS = [
     ]
 ]
 
-
+@clear_messages
 @load_data_for_register_user
 async def account_info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -121,13 +122,15 @@ async def account_info(
             )
         ]
     ]
-    await interaction.message.reply_text(
+    message = await interaction.message.reply_text(
         text=ACCOUNT_INFO,
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=PARSE_MODE
     )
+    add_message_to_delete_list(message, context)
 
 
+@clear_messages
 @load_data_for_register_user
 async def load_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -137,18 +140,25 @@ async def load_account_data(
             InlineKeyboardButton('Меню 📦', callback_data=MENU)
         ]
     ]
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         'Данные аккаунта успешно обновлены! ✅',
         reply_markup=InlineKeyboardMarkup(buttons)
     )
+    add_message_to_delete_list(message, context)
 
 
+@clear_messages
 @load_data_for_register_user
 async def check_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     account = context.user_data['account']
-    await update.message.reply_text(
+    buttons = [
+        [
+            InlineKeyboardButton('Меню 📦', callback_data=MENU)
+        ]
+    ]
+    message = await update.message.reply_text(
         text=ACCOUNT_DATA_MESSAGE.format(
             name=account['name'],
             surname=account['surname'],
@@ -160,10 +170,13 @@ async def check_account_data(
             is_superuser='✅' if account['is_superuser'] else '❌',
             jwt_token=account['jwt_token']
         ),
-        parse_mode=PARSE_MODE
+        parse_mode=PARSE_MODE,
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
+    add_message_to_delete_list(message, context)
 
 
+@clear_messages
 async def start_registration(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -171,39 +184,48 @@ async def start_registration(
     query = update.callback_query
     await query.answer()
     context.user_data['account'] = dict()
-    await query.message.reply_text(
+    message = await query.message.reply_text(
         'Укажите Ваше имя и фамилию через пробел: '
     )
+    add_message_to_delete_list(message, context)
     return REGISTRATION_FULL_NAME
 
 
+@clear_messages
 async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     full_name = update.message.text
+    await update.message.delete()
     if not await validate_full_name(update, context, full_name):
         return 'full_name'
     name, surname = full_name.split()
     context.user_data['account']['name'] = name
     context.user_data['account']['surname'] = surname
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         'Укажите Вашу почту: '
     )
+    add_message_to_delete_list(message, context)
     return REGISTRATION_EMAIL
 
 
+@clear_messages
 async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     entered_email = update.message.text
+    await update.message.delete()
     if not await validate_email(update, context, entered_email):
         return 'email'
-    context.user_data['account']['email'] = update.message.text
-    await update.message.reply_text(
+    context.user_data['account']['email'] = entered_email
+    message = await update.message.reply_text(
         'Придумайте пароль: '
     )
+    add_message_to_delete_list(message, context)
     return REGISTRATION_PASSWORD
 
 
 @catch_error(REGISTRATION_ERROR, conv=True)
+@clear_messages
 async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     entered_password = update.message.text
+    await update.message.delete()
     if not await validate_password(update, context, entered_password):
         return 'password'
     context.user_data['account']['password'] = entered_password
@@ -215,10 +237,11 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ) as response:
             if response.status == HTTPStatus.CREATED:
                 user = await response.json()
-                await update.message.reply_text(
+                message = await update.message.reply_text(
                     'Регистрация закончена!',
                     reply_markup=REPLY_KEYBOARD
                 )
+                add_message_to_delete_list(message, context)
                 buttons = [
                     [
                         InlineKeyboardButton(
@@ -226,19 +249,21 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         )
                     ]
                 ]
-                await update.message.reply_text(
+                message = await update.message.reply_text(
                     text=(
                         f'Привет, {user["name"]}! '
                         f'Вот твой id: {user["id"]}'
                     ),
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
+                add_message_to_delete_list(message, context)
             else:
                 detail = await response.json()
                 await update.message.reply_text(detail)
     return ConversationHandler.END
 
 
+@clear_messages
 async def get_password_for_authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -248,18 +273,21 @@ async def get_password_for_authorization(
         config = query
     else:
         config = update
-    await config.message.reply_text(
+    message = await config.message.reply_text(
         'Введите пароль от вашего аккаунта:'
     )
+    add_message_to_delete_list(message, context)
     return AUTH_AUTHORIZATION
 
 
 @catch_error(AUTHORIZATION_ERROR, conv=True)
+@clear_messages
 @load_data_for_register_user
 async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
+    await update.message.delete()
     async with aiohttp.ClientSession() as session:
         if not await check_password(
             update,
@@ -296,32 +324,38 @@ async def authorization(
                         )
                     ]
                 ]
-                await update.message.reply_text(
+                message = await update.message.reply_text(
                     'Авторизация выполнена 🔐',
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
+                add_message_to_delete_list(message, context)
                 return ConversationHandler.END
             await update.message.reply_text(
-                    'Ошибка при сохранении новго токена в БД 🚫'
+                    'Ошибка при сохранении нового токена в БД 🚫'
                 )
             return ConversationHandler.END
         return ConversationHandler.END
 
 
+@clear_messages
 async def get_password_for_delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         '🔐 Введите пароль от вашего аккаунта:'
     )
+    add_message_to_delete_list(message, context)
     return DELETE_START_DELETE
 
+
 @catch_error(DELETE_ACCOUNT_ERROR, conv=True)
+@clear_messages
 @load_data_for_register_user
 async def delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
+    await update.message.delete()
     async with aiohttp.ClientSession() as session:
         if not await check_password(
             update, context,
@@ -338,30 +372,35 @@ async def delete_account(
             headers=get_headers(context)
         ):
             context.user_data.pop('account')
-            await update.message.reply_text(
+            message = await update.message.reply_text(
                 'Ваш акккаунт удален!\n'
                 'Вы можете зарегестрироваться снова - /start',
                 reply_markup=ReplyKeyboardRemove()
             )
+            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 
+@clear_messages
 async def get_password_for_edit_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     context.user_data['edit_account'] = dict()
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         'Введите пароль от вашего аккаунта:'
     )
+    add_message_to_delete_list(message, context)
     return 'choose_edit_field'
 
 
 @catch_error(SELECT_EDIT_FIELD_ERROR, conv=True)
+@clear_messages
 @load_data_for_register_user
 async def choose_edit_field(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     entered_password = update.message.text
+    await update.message.delete()
     if update.callback_query:
         query = update.callback_query
         await query.answer()
@@ -377,15 +416,17 @@ async def choose_edit_field(
         return 'choose_edit_field'
     if not await check_authorization(config, context):
         return ConversationHandler.END
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         'Выберите поле для редактирования ⏳\n'
         'После редактирования нажмите применить!',
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
+    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 
 @catch_error(START_EDIT_ERROR, conv=True)
+@clear_messages
 async def start_edit_field(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -393,81 +434,97 @@ async def start_edit_field(
         await query.answer()
         field = query.data
         if field == EDIT_FULL_NAME_CALLBACK:
-            await query.message.reply_text(
+            message = await query.message.reply_text(
                 'Введите ваши фамилию и имя:'
             )
+            add_message_to_delete_list(message, context)
             return EDIT_SAVE_EDIT_FULL_NAME
         elif field == EDIT_EMAIL_CALLBACK:
-            await query.message.reply_text(
+            message = await query.message.reply_text(
                 'Введите обновленную почту:'
             )
+            add_message_to_delete_list(message, context)
             return EDIT_SAVE_EDIT_EMAIL
         elif field == EDIT_PASSWORD:
-            await query.message.reply_text(
+            message = await query.message.reply_text(
                 'Введите новый пароль:'
             )
+            add_message_to_delete_list(message, context)
             return EDIT_SAVE_EDIT_PASSWORD
 
 
 @catch_error(SAVE_FULL_NAME_ERROR)
+@clear_messages
 async def save_edit_full_name(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
         full_name = update.message.text
+        await update.message.delete()
         if not await validate_full_name(update, context, full_name):
             return EDIT_SAVE_EDIT_FULL_NAME
         name, surname = full_name.split()
         context.user_data['edit_account']['name'] = name
         context.user_data['edit_account']['surname'] = surname
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             'Новое имя и фамилия сохранены!\n'
         )
-        await update.message.reply_text(
+        add_message_to_delete_list(message, context)
+        message = await update.message.reply_text(
             'Выберите поле для редактирования ⏳',
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
+        add_message_to_delete_list(message, context)
         return EDIT_START_EDIT_FIELD
 
 
 @catch_error(SAVE_EMAIL_ERROR, conv=True)
+@clear_messages
 async def save_edit_email(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
         email = update.message.text
+        await update.message.delete()
         if not await validate_email(update, context, email):
             return EDIT_SAVE_EDIT_EMAIL
         context.user_data['edit_account']['email'] = email
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             'Новая почта сохранена!\n'
         )
-        await update.message.reply_text(
+        add_message_to_delete_list(message, context)
+        message = await update.message.reply_text(
             'Выберите поле для редактирования ⏳',
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
+        add_message_to_delete_list(message, context)
         return EDIT_START_EDIT_FIELD
 
 
 @catch_error(SAVE_PASSWORD_ERROR, conv=True)
+@clear_messages
 async def save_edit_password(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
         password = update.message.text
+        await update.message.delete()
         if not await validate_password(update, context, password):
             return EDIT_SAVE_EDIT_PASSWORD
         context.user_data['edit_account']['password'] = password
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             'Новый пароль сохранен!\n'
         )
-        await update.message.reply_text(
+        add_message_to_delete_list(message, context)
+        message = await update.message.reply_text(
             'Выберите поле для редактирования ⏳',
             reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
         )
+        add_message_to_delete_list(message, context)
         return EDIT_START_EDIT_FIELD
 
 @catch_error(EDIT_FINISH_ERROR)
+@clear_messages
 @load_data_for_register_user
 async def finish_edit(
     update: Update,
@@ -489,7 +546,7 @@ async def finish_edit(
                     )
                 ]
             ]
-            await query.message.reply_text(
+            message = await query.message.reply_text(
                 text='Данные обновлены ✅\n' + 
                 USER_CARD.format(
                     name=new_user_data['name'],
@@ -503,6 +560,7 @@ async def finish_edit(
                 ),
                 parse_mode=PARSE_MODE
             )
+            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 

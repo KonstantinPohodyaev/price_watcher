@@ -127,10 +127,11 @@ async def show_all(
             ]
             tracks = await response.json()
             if not tracks:
-                await query.message.reply_text(
+                message = await query.message.reply_text(
                     EMPTY_TRACKS,
                     reply_markup=InlineKeyboardMarkup(main_buttons)
                 )
+                add_message_to_delete_list(message, context)
                 return
             for track in tracks:
                 track_card = SHORT_TRACK_CARD.format(
@@ -321,6 +322,7 @@ async def create_new_track(
 
 
 @catch_error(PRICE_HISTORY_ERROR)
+@clear_messages
 @load_data_for_register_user
 async def check_track_history(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -351,12 +353,13 @@ async def check_track_history(
                     reply_markup=InlineKeyboardMarkup(navigate_buttons)
                 )
                 return
-            await query.message.reply_text(
+            title_message = await query.message.reply_text(
                 f'История товара {track_id}'
             )
+            add_message_to_delete_list(title_message, context)
             for write in writes:
                 date, time = write['created_at'].split('T')
-                await query.message.reply_text(
+                message = await query.message.reply_text(
                     text=PRICE_HISTORY_CARD.format(
                         price=write['price'],
                         date=date,
@@ -364,10 +367,12 @@ async def check_track_history(
                     ),
                     parse_mode=PARSE_MODE
                 )
-            await query.message.reply_text(
+                add_message_to_delete_list(message, context)
+            message = await query.message.reply_text(
                 'Навигация 📋',
                 reply_markup=InlineKeyboardMarkup(navigate_buttons)
             )
+            add_message_to_delete_list(message, context)
 
 
 async def confirm_track_delete(
@@ -375,6 +380,7 @@ async def confirm_track_delete(
 ):
     query = update.callback_query
     await query.answer()
+    track_card = query.message.text
     track_id = query.data.split('_')[-1]
     context.user_data['deleted_track'] = dict()
     context.user_data['deleted_track']['id'] = track_id
@@ -390,13 +396,19 @@ async def confirm_track_delete(
             )
         ]
     ]
-    await query.message.reply_text(
-        f'Вы точно хотите удалить товар с id = {track_id}',
-        reply_markup=InlineKeyboardMarkup(buttons)
+    message = await query.message.edit_text(
+        text=(
+            track_card
+            + '\n\n' + f'Вы точно хотите удалить товар с id = {track_id}'
+        ),
+        reply_markup=InlineKeyboardMarkup(buttons),
+        
     )
+    # add_message_to_delete_list(message, context)
     return FINISH_DELETE_TRACK
 
 @catch_error(DELETE_TRACK_ERROR, conv=True)
+@clear_messages
 @load_data_for_register_user
 async def finish_delete_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -412,11 +424,12 @@ async def finish_delete_track(
         ]
     ]
     if query.data == CANCEL_DELETE:
-        await query.message.reply_text(
+        message = await query.message.reply_text(
             f'Удаление товара с id = '
             f'{context.user_data["deleted_track"]["id"]} отменено!',
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+        add_message_to_delete_list(message, context)
         return ConversationHandler.END
     async with aiohttp.ClientSession() as session:
         async with session.delete(
@@ -425,11 +438,12 @@ async def finish_delete_track(
             ),
             headers=get_headers(context)
         ):
-            await query.message.reply_text(
+            message = await query.message.reply_text(
                 f'Товар с id = {context.user_data["deleted_track"]["id"]} '
                 f'успешно удален! ✅',
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
+            add_message_to_delete_list(message, context)
     return ConversationHandler.END
 
 

@@ -89,20 +89,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             ]
         ]
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             'Вы не зарегестрированы! 🚨',
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+        add_message_to_delete_list(message, context)
 
 
+@clear_messages
 async def info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     interaction = await get_interaction(update)
-    await interaction.message.reply_text(
+    message = await interaction.message.reply_text(
         text=INFO_MESSAGE,
         parse_mode=PARSE_MODE
     )
+    add_message_to_delete_list(message, context)
 
 
 @clear_messages
@@ -143,6 +146,7 @@ async def menu(
     add_message_to_delete_list(message, context)
 
 @catch_error(START_NOTIFICARIONS_ERROR)
+@clear_messages
 @load_data_for_register_user
 async def start_notifications(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -169,10 +173,11 @@ async def start_notifications(
             )
         ]
     ]
-    await query.message.reply_text(
+    message = await query.message.reply_text(
         '✅ Уведомления о снижении цены включены.',
         reply_markup=InlineKeyboardMarkup(buttons)
     )
+    add_message_to_delete_list(message, context)
 
 
 def handlers_installer(
