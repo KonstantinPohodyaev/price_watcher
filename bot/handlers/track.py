@@ -105,11 +105,11 @@ async def show_all(
             USERS_TRACKS,
             headers=get_headers(context)
         ) as response:
-            context.user_data['track_list'] = dict()
             if response.status == HTTPStatus.UNAUTHORIZED:
-                await query.message.reply_text(
+                not_auth_message = await query.message.reply_text(
                     OUTDATED_AUTHORIZATION_ERROR
                 )
+                add_message_to_delete_list(not_auth_message, context)
                 return
             main_buttons = [
                 [
@@ -141,7 +141,6 @@ async def show_all(
                     current_price=track.get('current_price'),
                     target_price=track.get('target_price')
                 )
-                context.user_data['track_list'][f'{track["id"]}'] = track_card
                 message = await query.message.reply_text(
                     text=track_card,
                     parse_mode=PARSE_MODE,
@@ -158,7 +157,6 @@ async def show_all(
             print(context.user_data['last_message_ids'])
 
 
-# @clear_messages
 async def get_new_target_price(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -169,7 +167,7 @@ async def get_new_target_price(
         return ConversationHandler.END
     await query.message.edit_text(
         text=(
-            context.user_data['track_list'][context.user_data['track_id']]
+            query.message.text
             + '\n'
             + NEW_TARGET_PRICE_MESSAGE
         ),
@@ -291,15 +289,27 @@ async def create_new_track(
                 return ConversationHandler.END
             elif response.status == HTTPStatus.BAD_REQUEST:
                 error_data = await response.json()
-                await update.message.reply_text(
+                message = await update.message.reply_text(
                     CREATE_BAD_REQUEST_ERROR.format(
                         error_message=error_data.get('detail')
                     )
                 )
+                add_message_to_delete_list(message, context)
                 await select_marketplace(update, context)
                 return ADD_TRACK_ADD_ARTICLE
             new_track = await response.json()
-            message = await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
+            message = await update.message.reply_text(
+                SUCCESS_CREATE_TRACK_MESSAGE
+            )
+            buttons = (
+                get_track_keyboard(new_track["id"])
+                + [[
+                    InlineKeyboardButton(
+                        'Вернуться к списку товаров ⬅️',
+                        callback_data=SHOW_ALL_TRACK
+                    )
+                ]]
+            )
             add_message_to_delete_list(message, context)
             track_card = TRACK_CARD.format(
                 title=new_track['title'],
@@ -313,9 +323,7 @@ async def create_new_track(
             message = await update.message.reply_text(
                 text=track_card,
                 parse_mode=PARSE_MODE,
-                reply_markup=InlineKeyboardMarkup(
-                    get_track_keyboard(new_track["id"])
-                )
+                reply_markup=InlineKeyboardMarkup(buttons)
             )
             add_message_to_delete_list(message, context)
             return ConversationHandler.END
@@ -399,9 +407,10 @@ async def confirm_track_delete(
     message = await query.message.edit_text(
         text=(
             track_card
-            + '\n\n' + f'Вы точно хотите удалить товар с id = {track_id}'
+            + '\n' + f'Вы точно хотите удалить товар с id = {track_id}'
         ),
         reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=PARSE_MODE
         
     )
     # add_message_to_delete_list(message, context)
