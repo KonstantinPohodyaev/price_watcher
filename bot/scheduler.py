@@ -6,7 +6,7 @@ from telegram import Bot
 from telegram.ext import ContextTypes
 
 from bot.endpoints import (REFRESH_DATA_FOR_EXISTEN_TRACK, UPDATE_TRACK_BY_ID,
-                           USERS_TRACKS)
+                           USERS_TRACKS, ADD_ENTRY_ABOUT_TRACK)
 from bot.handlers.utils import decode_jwt_token, get_headers
 
 SUCCESS_PRICE = (
@@ -94,3 +94,11 @@ async def check_prices_and_notify_users(
                             article=updated_track['article']
                         )
                     )
+                print(1)
+                async with session.post(
+                    ADD_ENTRY_ABOUT_TRACK.format(
+                        track_id=track['id']
+                    ),
+                    headers=headers
+                ) as response:
+                    print(response.status)

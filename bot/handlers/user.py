@@ -311,7 +311,7 @@ async def delete_account(
         ):
             context.user_data.pop('account')
             await update.message.reply_text(
-                'Ваш акккаунт удален!'
+                'Ваш акккаунт удален!\n'
                 'Вы можете зарегестрироваться снова - /start',
                 reply_markup=ReplyKeyboardRemove()
             )
