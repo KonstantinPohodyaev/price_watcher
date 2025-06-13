@@ -6,7 +6,7 @@ from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_EMAIL
-from bot.handlers.utils import get_interaction
+from bot.handlers.utils import get_interaction, add_message_to_delete_list
 
 VALIDATE_FULL_NAME_PATTERN = r'^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
 FULL_NAME_PATTERN_ERROR = (
@@ -71,9 +71,10 @@ async def validate_full_name(
             full_name
         )
     ):
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             FULL_NAME_PATTERN_ERROR.format(current=full_name)
         )
+        add_message_to_delete_list(message, context)
         return False
     return True
 
@@ -90,9 +91,10 @@ async def validate_email(
             email
         )
     ):
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             WRONG_EMAIL_PATTERN_ERROR.format(current=email)
         )
+        add_message_to_delete_list(message, context)
         return False
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -101,11 +103,12 @@ async def validate_email(
         ) as response:
             user_data = await response.json()
             if user_data:
-                await update.message.reply_text(
+                message = await update.message.reply_text(
                     NOT_UNIQUE_EMAIL_ERROR.format(
                         current=email
                     )
                 )
+                add_message_to_delete_list(message, context)
                 return False
     return True
 
@@ -126,16 +129,18 @@ async def validate_password(
             password
         )
     ):
-        await update.message.reply_text(WRONG_PASSWORD_PATTERN_ERROR)
+        message = await update.message.reply_text(WRONG_PASSWORD_PATTERN_ERROR)
+        add_message_to_delete_list(message, context)
         return False
     elif not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
-        await update.message.reply_text(
+        message = await update.message.reply_text(
             WRONG_PASSWORD_LENGTH_ERROR.format(
                 min=PASSWORD_MIN_LENGTH,
                 max=PASSWORD_MAX_LENGTH,
                 current=len(password)
             )
         )
+        add_message_to_delete_list(message, context)
         return False
     return True
 
@@ -148,24 +153,15 @@ async def validate_price(
     """Валидатор для цены"""
     str_price = price.strip().replace(',', '.')
     if not re.match(PRICE_PATTERN, str_price):
-        await interaction.message.reply_text(
+        message = await interaction.message.reply_text(
             WRONG_PASSWORD_PATTERN_ERROR
         )
+        add_message_to_delete_list(message, context)
         return False
     elif Decimal(str_price) < 0:
-        await interaction.message.reply_text(
+        message = await interaction.message.reply_text(
             PRICE_VALUE_ERROR
         )
+        add_message_to_delete_list(message, context)
         return False
     return str_price
-
-
-async def validate_marketplace(
-    interaction: Update | CallbackQuery,
-    context: ContextTypes.DEFAULT_TYPE,
-    marketplace: str
-) -> bool:
-    if not marketplace in MARKETPLACES:
-        await interaction.message.reply_text(
-            
-        )
