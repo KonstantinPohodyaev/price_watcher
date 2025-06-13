@@ -30,7 +30,7 @@ async def get_price_history_by_track_id(
 
 
 @router.post(
-    '/price_history/{track_id}',
+    '/price-history/{track_id}',
     response_model=PriceHistoryDB
 )
 async def add_entry_about_track(

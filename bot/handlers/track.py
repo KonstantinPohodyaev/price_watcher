@@ -52,8 +52,8 @@ CREATE_BAD_REQUEST_ERROR = """
 Попробуйте указать данные для товара заново.
 """
 OUTDATED_AUTHORIZATION_ERROR = """
-'Повторите авторизацию! /auth'
-'Срок действия истек 😢'
+Повторите авторизацию! /auth
+Срок действия истек 😢
 """
 SHORT_TRACK_CARD = """
 <b>{title}</b> - <code>{article}</code>
@@ -64,7 +64,7 @@ ID: <b>{id}</b>
 """
 PRICE_HISTORY_CARD = """
 Цена: <b>{price}</b>
-Дата создания: <b>{created_at}</b>
+Дата создания: <b>{date} {time}</b>
 """
 
 
@@ -298,7 +298,8 @@ async def check_track_history(
         async with session.get(
             GET_TRACKS_PRICE_HISTORY.format(
                 track_id=track_id
-            )
+            ),
+            headers=get_headers(context)
         ) as response:
             writes = await response.json()
             navigate_buttons = [
@@ -319,10 +320,12 @@ async def check_track_history(
                 f'История товара {track_id}'
             )
             for write in writes:
+                date, time = write['created_at'].split('T')
                 await query.message.reply_text(
                     text=PRICE_HISTORY_CARD.format(
                         price=write['price'],
-                        created_at=write['created_at']
+                        date=date,
+                        time=time
                     ),
                     parse_mode=PARSE_MODE
                 )

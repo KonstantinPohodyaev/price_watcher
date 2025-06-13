@@ -100,5 +100,5 @@ async def check_prices_and_notify_users(
                         track_id=track['id']
                     ),
                     headers=headers
-                ):
-                    pass
+                ) as response:
+                    print(response.status)
