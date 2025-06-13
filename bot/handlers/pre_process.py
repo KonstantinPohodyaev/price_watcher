@@ -49,7 +49,7 @@ def load_data_for_register_user(handler_func):
     return wrapper
 
 
-def load_option_features(handler_func):
+def clear_messages(handler_func):
     async def wrapper(update, context):
         """Проверка пользователя на аутентификацию."""
         interaction = await get_interaction(update)

@@ -12,7 +12,7 @@ from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
                                         SHOW_ALL_TRACK, WILDBERRIES,
                                         DELETE_TRACK)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user, load_option_features
+from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
                                 get_interaction, get_track_keyboard,
                                  add_message_to_delete_list)
@@ -91,7 +91,7 @@ _________________________
 
 
 @catch_error(SHOW_ALL_ERROR)
-@load_option_features
+@clear_messages
 @load_data_for_register_user
 async def show_all(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -157,7 +157,7 @@ async def show_all(
             print(context.user_data['last_message_ids'])
 
 
-# @load_option_features
+# @clear_messages
 async def get_new_target_price(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -178,7 +178,7 @@ async def get_new_target_price(
 
 
 @catch_error(TRACK_REFRESH_ERROR, conv=True)
-@load_option_features
+@clear_messages
 @load_data_for_register_user
 async def target_price_refresh(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -215,6 +215,7 @@ async def target_price_refresh(
             return ConversationHandler.END
 
 
+@clear_messages
 async def select_marketplace(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -232,41 +233,50 @@ async def select_marketplace(
             )
         ]
     ]
-    await interaction.message.reply_text(
+    message = await interaction.message.reply_text(
         SELECT_MARKETPLACE_MESSAGE,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
+    add_message_to_delete_list(message, context)
     return ADD_TRACK_ADD_ARTICLE
 
 
+@clear_messages
 async def add_article(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
     context.user_data['new_track']['marketplace'] = query.data.split('_')[-1]
-    await query.message.reply_text(
+    message = await query.message.reply_text(
         SELECT_ARTICLE_MESSAGE
     )
+    add_message_to_delete_list(message, context)
     return ADD_TRACK_ADD_TARGET_PRICE
 
 
+@clear_messages
 async def add_target_price(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     context.user_data['new_track']['article'] = update.message.text
-    await update.message.reply_text(
+    await update.message.delete()
+    message = await update.message.reply_text(
         SELECT_TARGET_PRICE_MESSAGE
     )
+    add_message_to_delete_list(message, context)
     return ADD_TRACK_CREATE_NEW_TRACK
 
 
 @catch_error(CREATE_NEW_TRACK_ERROR, conv=True)
+@clear_messages
 @load_data_for_register_user
 async def create_new_track(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     context.user_data['new_track']['target_price'] = update.message.text
+    await update.message.delete()
+    context.user_data['track_list'] = dict()
     async with aiohttp.ClientSession() as session:
         async with session.post(
             CREATE_NEW_TRACK,
@@ -288,21 +298,25 @@ async def create_new_track(
                 await select_marketplace(update, context)
                 return ADD_TRACK_ADD_ARTICLE
             new_track = await response.json()
-            await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
-            await update.message.reply_text(
-                text=TRACK_CARD.format(
-                    title=new_track['title'],
-                    article=new_track['article'],
-                    current_price=new_track['current_price'],
-                    target_price=new_track['target_price'],
-                    created_at=new_track['created_at'],
-                    last_checked_at=new_track['last_checked_at']
-                ),
+            message = await update.message.reply_text(SUCCESS_CREATE_TRACK_MESSAGE)
+            add_message_to_delete_list(message, context)
+            track_card = TRACK_CARD.format(
+                title=new_track['title'],
+                article=new_track['article'],
+                current_price=new_track['current_price'],
+                target_price=new_track['target_price'],
+                created_at=new_track['created_at'],
+                last_checked_at=new_track['last_checked_at']
+            )
+            context.user_data['track_list'][f'{new_track["id"]}'] = track_card
+            message = await update.message.reply_text(
+                text=track_card,
                 parse_mode=PARSE_MODE,
                 reply_markup=InlineKeyboardMarkup(
                     get_track_keyboard(new_track["id"])
                 )
             )
+            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 
@@ -408,7 +422,8 @@ async def finish_delete_track(
         async with session.delete(
             DELETE_TRACK_BY_ID.format(
                 id=context.user_data['deleted_track']['id']
-            )
+            ),
+            headers=get_headers(context)
         ):
             await query.message.reply_text(
                 f'Товар с id = {context.user_data["deleted_track"]["id"]} '
