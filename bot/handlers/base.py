@@ -10,7 +10,7 @@ from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
                                         START_NOTIFICATIONS,
                                         START_REGISTRATION, BOT_INFO)
 from bot.handlers.constants import PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user, load_option_features
+from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
                                 get_interaction, add_message_to_delete_list)
 from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,
@@ -47,6 +47,7 @@ START_MESSAGE = """
 """
 
 @catch_error(START_ERROR)
+@clear_messages
 @load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('account'):
@@ -66,17 +67,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 ]
             ]
-        await update.message.reply_text(
+        load_message = await update.message.reply_text(
             'Загрузка интерфейса...',
             reply_markup=REPLY_KEYBOARD
         )
-        await update.message.reply_text(
+        add_message_to_delete_list(load_message, context)
+        message = await update.message.reply_text(
             text=START_MESSAGE.format(
                 name=update.message.from_user.username
             ),
             parse_mode=PARSE_MODE,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+        add_message_to_delete_list(message, context)
     else:
         buttons = [
             [
@@ -101,6 +104,8 @@ async def info(
         parse_mode=PARSE_MODE
     )
 
+
+@clear_messages
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
