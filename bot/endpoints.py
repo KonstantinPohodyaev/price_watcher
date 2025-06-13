@@ -24,3 +24,4 @@ REFRESH_DATA_FOR_EXISTEN_TRACK = f'{PROTOCOL}://{DOMEN}/tracks/refresh/{{id}}'
 
 # Эндпоинты PriceHistory
 GET_TRACKS_PRICE_HISTORY = f'{PROTOCOL}://{DOMEN}/price-history/{{track_id}}'
+ADD_ENTRY_ABOUT_TRACK = f'{PROTOCOL}://{DOMEN}/price-history/{{track_id}}'
