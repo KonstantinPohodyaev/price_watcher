@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
-from bot.handlers.utils import get_interaction
+from bot.handlers.utils import get_interaction, get_telegram_id
 
 fernet = Fernet(
     os.getenv(
@@ -29,10 +29,7 @@ def load_data_for_register_user(handler_func):
         interaction = await get_interaction(update)
         if not context.user_data.get('account'):
             context.user_data['account'] = dict()
-        if isinstance(interaction, Update):
-            telegram_id = interaction.message.from_user.id
-        else:
-            telegram_id = interaction.from_user.id
+        telegram_id = get_telegram_id(interaction)
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GET_USER_BY_TELEGRAM_ID,
@@ -52,10 +49,18 @@ def load_data_for_register_user(handler_func):
     return wrapper
 
 
-
-
-
-def check_auth(handler_func):
+def load_option_features(handler_func):
     async def wrapper(update, context):
         """Проверка пользователя на аутентификацию."""
-        pass
+        interaction = await get_interaction(update)
+        if not context.user_data.get('last_messages_ids'):
+            context.user_data['last_messages_ids'] = list()
+        else:
+            for message_id in context.user_data['last_messages_ids']:
+                await context.bot.delete_message(
+                    chat_id=interaction.message.chat.id,
+                    message_id=message_id
+                )
+            context.user_data['last_messages_ids'] = list()
+        return await handler_func(update, context)
+    return wrapper

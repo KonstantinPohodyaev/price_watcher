@@ -8,11 +8,11 @@ from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
                                         START_AUTHORIZATION,
                                         START_NOTIFICATIONS,
-                                        START_REGISTRATION)
+                                        START_REGISTRATION, BOT_INFO)
 from bot.handlers.constants import PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user
+from bot.handlers.pre_process import load_data_for_register_user, load_option_features
 from bot.handlers.utils import (catch_error, check_authorization,
-                                get_interaction)
+                                get_interaction, add_message_to_delete_list)
 from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,
                            periodic_check)
 
@@ -22,22 +22,28 @@ START_ERROR = 'К сожалению возникла ошибка при зап
 
 START_NOTIFICARIONS_ERROR = 'Ошибка при активации уведомлений! ❌'
 
-INFO = """
-<u>Проект Price Watcher</u>
-________________________________________________________
-Здесь вы можете отслеживать цены по интересующим вас товарам
-на популярных маркетплейсах и получать уведомления,
-если цена упала до желаемой!
-/start - запуск бота
-/auth - пройти авторизацию
-/account_info - настройки аккаунта
+INFO_MESSAGE = """
+<b>📊 Проект: <u>Price Watcher</u></b>  
+━━━━━━━━━━━━━━━━━━━━━━━━━━  
+🔍 Следи за ценами на товары с популярных маркетплейсов  
+📉 Подключи уведомления и узнаешь, когда цена на товар упадет до желаемой  
+🔐 Простая авторизация и управление аккаунтом  
+━━━━━━━━━━━━━━━━━━━━━━━━━━  
+📌 Команды:  
+/start — запустить бота  
+/auth — авторизация  
+/account_info — настройки аккаунта
+/menu — главное меню
 """
 
 START_MESSAGE = """
-<b>Привет</b>, <code>{name}</code>!
-Чем я тебе могу помочь? 👋
-_____________________________________
-/info - информация о боте
+<b>👋 Привет, <code>{name}</code>!</b>  
+Добро пожаловать в <b>Price Watcher</b>  
+━━━━━━━━━━━━━━━━━━━━━━━━━━  
+Я помогу тебе следить за ценами и вовремя сообщать,  
+когда товар подешевеет 📉  
+━━━━━━━━━━━━━━━━━━━━━━━━━━  
+ℹ️ /info — информация о боте
 """
 
 @catch_error(START_ERROR)
@@ -89,11 +95,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    await update.message.reply_text(
-        text=INFO,
+    interaction = await get_interaction(update)
+    await interaction.message.reply_text(
+        text=INFO_MESSAGE,
         parse_mode=PARSE_MODE
     )
-
 
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -102,28 +108,34 @@ async def menu(
     buttons = [
         [
             InlineKeyboardButton(
-                'Мои товары 📦',
+                text='📦 Мои товары',
                 callback_data=SHOW_ALL_TRACK
             )
         ],
         [
             InlineKeyboardButton(
-                'Добавить новый товар 📦',
+                text='➕ Добавить товар',
                 callback_data=ADD_TRACK
             )
         ],
         [
             InlineKeyboardButton(
-                'Включить оповещения 📦',
+                text='🔔 Включить оповещения',
                 callback_data=START_NOTIFICATIONS
             )
         ],
-        
+        [
+            InlineKeyboardButton(
+                text='ℹ️ О боте',
+                callback_data=BOT_INFO
+            )
+        ],
     ]
-    await interaction.message.reply_text(
+    message = await interaction.message.reply_text(
         'Выберите интересующий вас пункт',
         reply_markup=InlineKeyboardMarkup(buttons)
     )
+    add_message_to_delete_list(message, context)
 
 @catch_error(START_NOTIFICARIONS_ERROR)
 @load_data_for_register_user
@@ -168,7 +180,13 @@ def handlers_installer(
         CommandHandler('info', info)
     )
     application.add_handler(
+        CallbackQueryHandler(info, pattern=f'^{BOT_INFO}$')
+    )
+    application.add_handler(
         CallbackQueryHandler(menu, pattern=f'^{MENU}$')
+    )
+    application.add_handler(
+        CommandHandler('menu', menu)
     )
     application.add_handler(
         MessageHandler(
