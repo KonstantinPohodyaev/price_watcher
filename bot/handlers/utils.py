@@ -42,6 +42,20 @@ def catch_error(error_message: str, conv=False):
     return decorator
 
 
+def get_telegram_id(interaction: Update | CallbackQuery):
+    """Находит телеграм id пользователя."""
+    if isinstance(interaction, Update):
+        return interaction.message.from_user.id
+    return interaction.from_user.id
+
+
+def add_message_to_delete_list(message, context: ContextTypes.DEFAULT_TYPE):
+    """Добавляет сообщение в очередь на удаление."""
+    if not context.user_data.get('last_message_ids'):
+        context.user_data['last_message_ids'] = list()
+    context.user_data['last_message_ids'].append(message.message_id)
+
+
 async def check_password(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,

@@ -9,7 +9,8 @@ from bot.endpoints import (CREATE_NEW_TRACK, DELETE_TRACK_BY_ID,
                            GET_TRACKS_PRICE_HISTORY, USERS_TRACKS,
                            USERS_TRACKS_BY_ID)
 from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES)
+                                        SHOW_ALL_TRACK, WILDBERRIES,
+                                        DELETE_TRACK)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
@@ -56,15 +57,16 @@ OUTDATED_AUTHORIZATION_ERROR = """
 Срок действия истек 😢
 """
 SHORT_TRACK_CARD = """
-<b>{title}</b> - <code>{article}</code>
-_________________________
-ID: <b>{id}</b>
-Текущая цена: <b>{current_price}</b>
-Желаемая цена: <b>{target_price}</b>
+<b>🛒 {title}</b>  <code>{article}</code>
+_____________________________________
+💸 <b>Текущая цена:</b> <code>{current_price}₽</code>  
+🎯 <b>Желаемая цена:</b> <code>{target_price}₽</code>
+_____________________________________
+<b>ID:</b> <code>{id}</code>
 """
 PRICE_HISTORY_CARD = """
-Цена: <b>{price}</b>
-Дата создания: <b>{date} {time}</b>
+<b>💰 Цена:</b> {price}₽  
+<b>📅 Дата:</b> {date} {time}
 """
 
 
@@ -453,7 +455,7 @@ def handlers_installer(
     delete_track_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
-                confirm_track_delete, pattern='^track_delete_'
+                confirm_track_delete, pattern=f'^{DELETE_TRACK}_'
             )
         ],
         states={

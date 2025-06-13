@@ -13,7 +13,7 @@ from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
                                         MENU)
-from bot.handlers.constants import MESSAGE_HANDLERS
+from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user
 from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction)
@@ -41,20 +41,36 @@ EDIT_FINISH_EDIT = 'finish_edit'
 # Сообщения для reply_text
 
 ACCOUNT_INFO = """
-Настройки аккаунта
-__________________
-/load_data - загрузить актуальные данные аккаунта
-/edit_account - редактировать аккаунт
-/delete_account - удалить аккаунт
-/account_data - посмотреть данные аккаунта
+<b>⚙️ Настройки аккаунта</b>
+━━━━━━━━━━━━━━━━━━
+🔄 <b>/load_data</b> – обновить данные аккаунта  
+✏️ <b>/edit_account</b> – редактировать аккаунт  
+🗑️ <b>/delete_account</b> – удалить аккаунт  
+👤 <b>/account_data</b> – просмотреть данные аккаунта
+"""
+
+ACCOUNT_DATA_MESSAGE = """
+<b>👤 Данные аккаунта</b>
+━━━━━━━━━━━━━━━━━━
+<b>Имя:</b> {name}
+<b>Фамилия:</b> {surname}
+<b>Почта:</b> {email}
+<b>Telegram ID:</b> <code>{telegram_id}</code>
+<b>Chat ID:</b> <code>{chat_id}</code>
+
+<b>Активен:</b> {active}
+<b>Почта подтверждена:</b> {is_verified}
+<b>Суперпользователь:</b> {is_superuser}
+
+<b>JWT-токен:</b>  
+<code>{jwt_token}</code>
 """
 
 USER_CARD = """
-Имя: {name}
-Фамилия: {surname}
-Telegram-id: {telegram_id}
-Почта: {email}
-Токен: {jwt_token}
+👤 <b>Полное имя:</b> {name} {surname}  
+📧 <b>Почта:</b> <code>{email}</code>  
+🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>
+🔐 <b>JWT:</b> <code>{jwt_token}</code>
 """
 
 REGISTRATION_ERROR = (
@@ -106,8 +122,9 @@ async def account_info(
         ]
     ]
     await interaction.message.reply_text(
-        ACCOUNT_INFO,
-        reply_markup=InlineKeyboardMarkup(buttons)
+        text=ACCOUNT_INFO,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=PARSE_MODE
     )
 
 
@@ -130,9 +147,20 @@ async def load_account_data(
 async def check_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    account = context.user_data['account']
     await update.message.reply_text(
-        text=f'```{context.user_data["account"]}```',
-        parse_mode='MarkdownV2'
+        text=ACCOUNT_DATA_MESSAGE.format(
+            name=account['name'],
+            surname=account['surname'],
+            email=account['email'],
+            telegram_id=account['telegram_id'],
+            chat_id=account['chat_id'],
+            active='✅' if account['is_active'] else '❌',
+            is_verified='✅' if account['is_verified'] else '❌',
+            is_superuser='✅' if account['is_superuser'] else '❌',
+            jwt_token=account['jwt_token']
+        ),
+        parse_mode=PARSE_MODE
     )
 
 
@@ -264,12 +292,12 @@ async def authorization(
                 buttons = [
                     [
                         InlineKeyboardButton(
-                            'Меню', callback_data='base_menu'
+                            'Меню 📦', callback_data=MENU
                         )
                     ]
                 ]
                 await update.message.reply_text(
-                    'Авторизация выполнена ✅',
+                    'Авторизация выполнена 🔐',
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
                 return ConversationHandler.END
@@ -284,7 +312,7 @@ async def get_password_for_delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     await update.message.reply_text(
-        'Введите пароль от вашего аккаунта:'
+        '🔐 Введите пароль от вашего аккаунта:'
     )
     return DELETE_START_DELETE
 
@@ -472,7 +500,8 @@ async def finish_edit(
                 ),
                 reply_markup=InlineKeyboardMarkup(
                     buttons
-                )
+                ),
+                parse_mode=PARSE_MODE
             )
             return ConversationHandler.END
 
