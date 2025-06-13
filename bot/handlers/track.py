@@ -127,10 +127,11 @@ async def show_all(
             ]
             tracks = await response.json()
             if not tracks:
-                await query.message.reply_text(
+                message = await query.message.reply_text(
                     EMPTY_TRACKS,
                     reply_markup=InlineKeyboardMarkup(main_buttons)
                 )
+                add_message_to_delete_list(message, context)
                 return
             for track in tracks:
                 track_card = SHORT_TRACK_CARD.format(
@@ -321,6 +322,7 @@ async def create_new_track(
 
 
 @catch_error(PRICE_HISTORY_ERROR)
+@clear_messages
 @load_data_for_register_user
 async def check_track_history(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -351,12 +353,13 @@ async def check_track_history(
                     reply_markup=InlineKeyboardMarkup(navigate_buttons)
                 )
                 return
-            await query.message.reply_text(
+            title_message = await query.message.reply_text(
                 f'История товара {track_id}'
             )
+            add_message_to_delete_list(title_message, context)
             for write in writes:
                 date, time = write['created_at'].split('T')
-                await query.message.reply_text(
+                message = await query.message.reply_text(
                     text=PRICE_HISTORY_CARD.format(
                         price=write['price'],
                         date=date,
@@ -364,10 +367,12 @@ async def check_track_history(
                     ),
                     parse_mode=PARSE_MODE
                 )
-            await query.message.reply_text(
+                add_message_to_delete_list(message, context)
+            message = await query.message.reply_text(
                 'Навигация 📋',
                 reply_markup=InlineKeyboardMarkup(navigate_buttons)
             )
+            add_message_to_delete_list(message, context)
 
 
 async def confirm_track_delete(
