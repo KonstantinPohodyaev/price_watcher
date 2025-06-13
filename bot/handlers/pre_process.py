@@ -53,14 +53,15 @@ def load_option_features(handler_func):
     async def wrapper(update, context):
         """Проверка пользователя на аутентификацию."""
         interaction = await get_interaction(update)
-        if not context.user_data.get('last_messages_ids'):
-            context.user_data['last_messages_ids'] = list()
+        if not context.user_data.get('last_message_ids'):
+            context.user_data['last_message_ids'] = list()
         else:
-            for message_id in context.user_data['last_messages_ids']:
+            for message_id in context.user_data['last_message_ids']:
+                print(message_id)
                 await context.bot.delete_message(
                     chat_id=interaction.message.chat.id,
                     message_id=message_id
                 )
-            context.user_data['last_messages_ids'] = list()
+            context.user_data['last_message_ids'] = list()
         return await handler_func(update, context)
     return wrapper

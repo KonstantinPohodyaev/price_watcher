@@ -12,9 +12,10 @@ from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
                                         SHOW_ALL_TRACK, WILDBERRIES,
                                         DELETE_TRACK)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user
+from bot.handlers.pre_process import load_data_for_register_user, load_option_features
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
-                                get_interaction, get_track_keyboard)
+                                get_interaction, get_track_keyboard,
+                                 add_message_to_delete_list)
 from bot.handlers.validators import validate_price
 
 # Состояния для ConversationHandler
@@ -90,6 +91,7 @@ _________________________
 
 
 @catch_error(SHOW_ALL_ERROR)
+@load_option_features
 @load_data_for_register_user
 async def show_all(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -103,6 +105,7 @@ async def show_all(
             USERS_TRACKS,
             headers=get_headers(context)
         ) as response:
+            context.user_data['track_list'] = dict()
             if response.status == HTTPStatus.UNAUTHORIZED:
                 await query.message.reply_text(
                     OUTDATED_AUTHORIZATION_ERROR
@@ -130,25 +133,31 @@ async def show_all(
                 )
                 return
             for track in tracks:
-                await query.message.reply_text(
-                    text=SHORT_TRACK_CARD.format(
-                        title=track.get('title'),
-                        id=track.get('id'),
-                        article=track.get('article'),
-                        current_price=track.get('current_price'),
-                        target_price=track.get('target_price')
-                    ),
+                track_card = SHORT_TRACK_CARD.format(
+                    title=track.get('title'),
+                    id=track.get('id'),
+                    article=track.get('article'),
+                    current_price=track.get('current_price'),
+                    target_price=track.get('target_price')
+                )
+                context.user_data['track_list'][f'{track["id"]}'] = track_card
+                message = await query.message.reply_text(
+                    text=track_card,
                     parse_mode=PARSE_MODE,
                     reply_markup=InlineKeyboardMarkup(
                         get_track_keyboard(track["id"])
                     )
                 )
-            await query.message.reply_text(
+                add_message_to_delete_list(message, context)
+            message = await query.message.reply_text(
                 'Навигация 💬',
                 reply_markup=InlineKeyboardMarkup(main_buttons)
             )
+            add_message_to_delete_list(message, context)
+            print(context.user_data['last_message_ids'])
 
 
+# @load_option_features
 async def get_new_target_price(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -157,16 +166,25 @@ async def get_new_target_price(
     context.user_data['track_id'] = query.data.split('_')[-1]
     if not await check_authorization(query, context):
         return ConversationHandler.END
-    await query.message.reply_text(NEW_TARGET_PRICE_MESSAGE)
+    await query.message.edit_text(
+        text=(
+            context.user_data['track_list'][context.user_data['track_id']]
+            + '\n'
+            + NEW_TARGET_PRICE_MESSAGE
+        ),
+        parse_mode=PARSE_MODE
+    )
     return 'save_new_target_price'
 
 
 @catch_error(TRACK_REFRESH_ERROR, conv=True)
+@load_option_features
 @load_data_for_register_user
 async def target_price_refresh(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     get_new_target_price = update.message.text
+    await update.message.delete()
     validated_price = await validate_price(
         update, context, get_new_target_price
     )
@@ -184,15 +202,16 @@ async def target_price_refresh(
             buttons = [
                 [
                     InlineKeyboardButton(
-                        'Вернуться назад ⬅️',
+                        'Вернуться к списку ⬅️',
                         callback_data=f'{SHOW_ALL_TRACK}'
                     )
                 ]
             ]
-            await update.message.reply_text(
-                'Цена успешно обновлена! ✅',
+            message = await update.message.reply_text(
+                f'Цена успешно обновлена на {get_new_target_price}! ✅',
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
+            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 

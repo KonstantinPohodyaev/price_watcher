@@ -47,6 +47,7 @@ START_MESSAGE = """
 """
 
 @catch_error(START_ERROR)
+@load_option_features
 @load_data_for_register_user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('account'):
@@ -66,17 +67,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 ]
             ]
-        await update.message.reply_text(
+        load_message = await update.message.reply_text(
             'Загрузка интерфейса...',
             reply_markup=REPLY_KEYBOARD
         )
-        await update.message.reply_text(
+        add_message_to_delete_list(load_message, context)
+        message = await update.message.reply_text(
             text=START_MESSAGE.format(
                 name=update.message.from_user.username
             ),
             parse_mode=PARSE_MODE,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+        add_message_to_delete_list(message, context)
     else:
         buttons = [
             [
@@ -101,6 +104,8 @@ async def info(
         parse_mode=PARSE_MODE
     )
 
+
+@load_option_features
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
