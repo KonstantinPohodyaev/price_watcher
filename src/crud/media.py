@@ -5,3 +5,6 @@ from src.schemas.media import MediaCreate, MediaUpdate
 
 class MediaCRUD(CRUDBase[Media, MediaCreate, MediaUpdate]):
     """CRUD-класс для модели Media."""
+
+
+media_crud = MediaCRUD(Media)
