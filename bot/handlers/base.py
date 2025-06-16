@@ -8,7 +8,8 @@ from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
                                         START_AUTHORIZATION,
                                         START_NOTIFICATIONS,
-                                        START_REGISTRATION, BOT_INFO)
+                                        START_REGISTRATION, BOT_INFO,
+                                        ACCOUNT_SETTINGS)
 from bot.handlers.constants import PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
@@ -32,7 +33,7 @@ INFO_MESSAGE = """
 📌 Команды:  
 /start — запустить бота  
 /auth — авторизация  
-/account_info — настройки аккаунта
+/account_settings — настройки аккаунта
 /menu — главное меню
 """
 
@@ -130,6 +131,12 @@ async def menu(
             InlineKeyboardButton(
                 text='🔔 Включить оповещения',
                 callback_data=START_NOTIFICATIONS
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text='⚙️ Настройки аккаунта',
+                callback_data=ACCOUNT_SETTINGS
             )
         ],
         [

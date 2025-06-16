@@ -94,7 +94,22 @@ async def check_prices_and_notify_users(
                             article=updated_track['article']
                         )
                     )
-                print(1)
+                elif (
+                    Decimal(updated_track['target_price'])
+                    <= Decimal(updated_track['current_price'])
+                    and updated_track['notified'] is True
+                ):
+                    update_data = dict(
+                        notified=False
+                    )
+                    async with session.patch(
+                        UPDATE_TRACK_BY_ID.format(
+                            id=track['id']
+                        ),
+                        json=update_data,
+                        headers=headers
+                    ):
+                        pass
                 async with session.post(
                     ADD_ENTRY_ABOUT_TRACK.format(
                         track_id=track['id']

@@ -62,12 +62,20 @@ SHORT_TRACK_CARD = """
 _____________________________________
 💸 <b>Текущая цена:</b> <code>{current_price}₽</code>  
 🎯 <b>Желаемая цена:</b> <code>{target_price}₽</code>
+🏷️ <b>Статус:</b> {status}
 _____________________________________
 <b>ID:</b> <code>{id}</code>
 """
 PRICE_HISTORY_CARD = """
 <b>💰 Цена:</b> {price}₽  
 <b>📅 Дата:</b> {date} {time}
+"""
+TRACKS_RESULT_MESSAGE = """
+<b>📊 Итого:</b>
+_____________________________________
+<b>📦 Всего отслеживаемых товаров:</b> <code>{track_count}</code>
+<b>📉 Цена ниже желаемой:</b> <code>{true_track_count}</code>
+<b>📈 Цена выше желаемой:</b> <code>{false_track_count}</code>
 """
 
 
@@ -133,13 +141,19 @@ async def show_all(
                 )
                 add_message_to_delete_list(message, context)
                 return
+            true_track_count = false_track_count = 0
             for track in tracks:
+                if track['target_price'] >= track['current_price']:
+                    true_track_count += 1
+                else:
+                    false_track_count += 1
                 track_card = SHORT_TRACK_CARD.format(
                     title=track.get('title'),
                     id=track.get('id'),
                     article=track.get('article'),
                     current_price=track.get('current_price'),
-                    target_price=track.get('target_price')
+                    target_price=track.get('target_price'),
+                    status='✅' if track['notified'] else '❌'
                 )
                 message = await query.message.reply_text(
                     text=track_card,
@@ -150,11 +164,15 @@ async def show_all(
                 )
                 add_message_to_delete_list(message, context)
             message = await query.message.reply_text(
-                'Навигация 💬',
-                reply_markup=InlineKeyboardMarkup(main_buttons)
+                TRACKS_RESULT_MESSAGE.format(
+                    track_count=len(tracks),
+                    true_track_count=true_track_count,
+                    false_track_count=false_track_count
+                ),
+                reply_markup=InlineKeyboardMarkup(main_buttons),
+                parse_mode=PARSE_MODE
             )
             add_message_to_delete_list(message, context)
-            print(context.user_data['last_message_ids'])
 
 
 async def get_new_target_price(
@@ -289,12 +307,12 @@ async def create_new_track(
                 return ConversationHandler.END
             elif response.status == HTTPStatus.BAD_REQUEST:
                 error_data = await response.json()
-                message = await update.message.reply_text(
+                await update.message.reply_text(
                     CREATE_BAD_REQUEST_ERROR.format(
                         error_message=error_data.get('detail')
                     )
                 )
-                add_message_to_delete_list(message, context)
+                # add_message_to_delete_list(message, context)
                 await select_marketplace(update, context)
                 return ADD_TRACK_ADD_ARTICLE
             new_track = await response.json()
@@ -407,7 +425,8 @@ async def confirm_track_delete(
     message = await query.message.edit_text(
         text=(
             track_card
-            + '\n' + f'Вы точно хотите удалить товар с id = {track_id}'
+            + '\n'
+            + f'Вы точно хотите удалить товар с id = {track_id}'
         ),
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=PARSE_MODE

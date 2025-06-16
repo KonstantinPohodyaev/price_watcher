@@ -12,7 +12,7 @@ from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
 from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
-                                        MENU)
+                                        MENU, ACCOUNT_SETTINGS)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
@@ -41,7 +41,7 @@ EDIT_FINISH_EDIT = 'finish_edit'
 
 # Сообщения для reply_text
 
-ACCOUNT_INFO = """
+ACCOUNT_SETTINGS_MESSAGE = """
 <b>⚙️ Настройки аккаунта</b>
 ━━━━━━━━━━━━━━━━━━
 🔄 <b>/load_data</b> – обновить данные аккаунта  
@@ -111,7 +111,7 @@ EDIT_BUTTONS = [
 
 @clear_messages
 @load_data_for_register_user
-async def account_info(
+async def account_settings(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     interaction = await get_interaction(update)
@@ -123,7 +123,7 @@ async def account_info(
         ]
     ]
     message = await interaction.message.reply_text(
-        text=ACCOUNT_INFO,
+        text=ACCOUNT_SETTINGS_MESSAGE,
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=PARSE_MODE
     )
@@ -542,7 +542,7 @@ async def finish_edit(
             buttons=[
                 [
                     InlineKeyboardButton(
-                        'Назад', callback_data='account_info'
+                        'Назад', callback_data=ACCOUNT_SETTINGS
                     )
                 ]
             ]
@@ -570,14 +570,16 @@ def handlers_installer(
     application.add_handler(
         MessageHandler(
             filters.TEXT & filters.Regex('^Ваш аккаунт 📱$'),
-            account_info
+            account_settings
         )
     )
     application.add_handler(
-        CommandHandler('account_info', account_info)
+        CommandHandler('account_settings', account_settings)
     )
     application.add_handler(
-        CallbackQueryHandler(account_info, pattern='^account_info$')
+        CallbackQueryHandler(
+            account_settings, pattern=f'^{ACCOUNT_SETTINGS}$'
+        )
     )
     application.add_handler(
         CommandHandler('account_data', check_account_data)

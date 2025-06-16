@@ -1,8 +1,8 @@
-"""empty message
+"""main_migration
 
-Revision ID: cb185521c812
+Revision ID: 06c5f427c9f4
 Revises: 
-Create Date: 2025-06-11 13:16:35.809973
+Create Date: 2025-06-16 11:28:40.564150
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'cb185521c812'
+revision: str = '06c5f427c9f4'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,6 +27,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=128), nullable=True),
     sa.Column('surname', sa.String(length=128), nullable=True),
     sa.Column('hashed_password', sa.String(), nullable=False),
+    sa.Column('chat_id', sa.String(), nullable=True),
     sa.Column('is_verified', sa.Boolean(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),

@@ -11,7 +11,7 @@ from src.schemas.track import TrackDBCreate, TrackUpdate
 class TrackCRUD(CRUDBase[Track, TrackDBCreate, TrackUpdate]):
     async def get_all(self, filter_schema, session: AsyncSession):
         """
-        Возвращает товары определенного полщьзователя.
+        Возвращает товары определенного пользователя.
 
         Дополнительно есть фильтрация.
         """
