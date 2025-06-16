@@ -9,6 +9,7 @@ from src.models.base import Base
 if TYPE_CHECKING:
     from src.models.jwt_auth import JWTToken
     from src.models.track import Track
+    from src.models.media import Media
 
 NAME_MAX_LENGTH = 128
 SURNAME_MAX_LENGTH = 128
@@ -56,6 +57,12 @@ class User(Base, SQLAlchemyBaseUserTable):
         'JWTToken',
         back_populates='user',
         uselist=False,
+        lazy='selectin',
+        cascade='all, delete-orphan'
+    )
+    media: Mapped['Media'] = relationship(
+        'Media',
+        back_populates='user',
         lazy='selectin',
         cascade='all, delete-orphan'
     )

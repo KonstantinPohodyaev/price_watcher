@@ -59,7 +59,7 @@ class Track(Base):
         'PriceHistory',
         back_populates='track',
         lazy='selectin',
-        cascade="all, delete-orphan"
+        cascade='all, delete-orphan'
     )
 
     __table_args__ = (
