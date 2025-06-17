@@ -1,5 +1,6 @@
 import os
 
+import aiofiles
 from fastapi import APIRouter, status, UploadFile, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +19,7 @@ UPLOAD_DIR = 'media'
 
 
 @router.post(
-    '/upload-avatar/{user_id}',
+    '/upload-avatar/',
     response_model=MediaDB,
     status_code=status.HTTP_200_OK
 )
@@ -29,8 +30,8 @@ async def upload_media(
 ):
     filename = f'{user.telegram_id}_{file.filename}'
     file_path = os.path.join(UPLOAD_DIR, filename)
-    with open(file_path, 'wb') as new_file:
-        new_file.write(await file.read())
+    async with aiofiles.open(file_path, 'wb') as new_file:
+        await new_file.write(await file.read())
     return await media_crud.create(
         MediaCreate(
             user_id=user.id,
@@ -39,3 +40,16 @@ async def upload_media(
         ),
         session
     )
+
+
+@router.get(
+    '/avatar/{media_id}',
+    response_model=MediaDB,
+    status_code=status.HTTP_200_OK
+)
+async def get_user_avatar(
+    media_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user)
+):
+    return await media_crud.get(media_id, session)
