@@ -16,10 +16,11 @@ from src.core.user import current_user
 router = APIRouter()
 
 UPLOAD_DIR = 'media'
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post(
-    '/upload-avatar/',
+    '/upload-avatar',
     response_model=MediaDB,
     status_code=status.HTTP_200_OK
 )

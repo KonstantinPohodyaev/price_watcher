@@ -8,18 +8,19 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           MessageHandler, filters)
 
 from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
-                           USERS_REFRESH_ME)
+                           USERS_REFRESH_ME, ADD_NEW_AVATAR)
 from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
-                                        MENU, ACCOUNT_SETTINGS)
+                                        MENU, ACCOUNT_SETTINGS,
+                                        EDIT_ADD_AVATAR)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction,
                                 add_message_to_delete_list)
 from bot.handlers.validators import (validate_email, validate_full_name,
-                                     validate_password)
+                                     validate_password, validate_empty_photo)
 
 # Состояния для ConversationHandler
 
@@ -37,6 +38,7 @@ EDIT_START_EDIT_FIELD = 'start_edit_field'
 EDIT_SAVE_EDIT_FULL_NAME = 'save_edit_full_name'
 EDIT_SAVE_EDIT_EMAIL = 'save_edit_email'
 EDIT_SAVE_EDIT_PASSWORD = 'save_edit_password'
+EDIT_SAVE_AVATAR = 'save_avatar'
 EDIT_FINISH_EDIT = 'finish_edit'
 
 # Сообщения для reply_text
@@ -89,8 +91,14 @@ SAVE_FULL_NAME_ERROR = (
 SAVE_EMAIL_ERROR = 'Ошибка при сохранении новой почты в БД 🚫'
 SAVE_PASSWORD_ERROR = 'Ошибка при сохранении нового пароля в БД 🚫'
 EDIT_FINISH_ERROR = 'Ошибка при сохранении изменений аккаунта 🚫'
+SAVE_AVATAR_ERROR = 'Ошибка при сохранении аватарки 🚫'
 
 EDIT_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Добавить фото', callback_data=EDIT_ADD_AVATAR
+        )
+    ],
     [
         InlineKeyboardButton(
             'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
@@ -430,27 +438,33 @@ async def choose_edit_field(
 async def start_edit_field(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-        query = update.callback_query
-        await query.answer()
-        field = query.data
-        if field == EDIT_FULL_NAME_CALLBACK:
-            message = await query.message.reply_text(
-                'Введите ваши фамилию и имя:'
-            )
-            add_message_to_delete_list(message, context)
-            return EDIT_SAVE_EDIT_FULL_NAME
-        elif field == EDIT_EMAIL_CALLBACK:
-            message = await query.message.reply_text(
-                'Введите обновленную почту:'
-            )
-            add_message_to_delete_list(message, context)
-            return EDIT_SAVE_EDIT_EMAIL
-        elif field == EDIT_PASSWORD:
-            message = await query.message.reply_text(
-                'Введите новый пароль:'
-            )
-            add_message_to_delete_list(message, context)
-            return EDIT_SAVE_EDIT_PASSWORD
+    query = update.callback_query
+    await query.answer()
+    field = query.data
+    if field == EDIT_FULL_NAME_CALLBACK:
+        message = await query.message.reply_text(
+            'Введите ваши фамилию и имя:'
+        )
+        add_message_to_delete_list(message, context)
+        return EDIT_SAVE_EDIT_FULL_NAME
+    elif field == EDIT_EMAIL_CALLBACK:
+        message = await query.message.reply_text(
+            'Введите обновленную почту:'
+        )
+        add_message_to_delete_list(message, context)
+        return EDIT_SAVE_EDIT_EMAIL
+    elif field == EDIT_PASSWORD:
+        message = await query.message.reply_text(
+            'Введите новый пароль:'
+        )
+        add_message_to_delete_list(message, context)
+        return EDIT_SAVE_EDIT_PASSWORD
+    elif field == EDIT_ADD_AVATAR:
+        message = await query.message.reply_text(
+            'Загрузите ваше фото для профиля:'
+        )
+        add_message_to_delete_list(message, context)
+        return EDIT_SAVE_AVATAR
 
 
 @catch_error(SAVE_FULL_NAME_ERROR)
@@ -459,23 +473,23 @@ async def save_edit_full_name(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-        full_name = update.message.text
-        await update.message.delete()
-        if not await validate_full_name(update, context, full_name):
-            return EDIT_SAVE_EDIT_FULL_NAME
-        name, surname = full_name.split()
-        context.user_data['edit_account']['name'] = name
-        context.user_data['edit_account']['surname'] = surname
-        message = await update.message.reply_text(
-            'Новое имя и фамилия сохранены!\n'
-        )
-        add_message_to_delete_list(message, context)
-        message = await update.message.reply_text(
-            'Выберите поле для редактирования ⏳',
-            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
-        )
-        add_message_to_delete_list(message, context)
-        return EDIT_START_EDIT_FIELD
+    full_name = update.message.text
+    await update.message.delete()
+    if not await validate_full_name(update, context, full_name):
+        return EDIT_SAVE_EDIT_FULL_NAME
+    name, surname = full_name.split()
+    context.user_data['edit_account']['name'] = name
+    context.user_data['edit_account']['surname'] = surname
+    message = await update.message.reply_text(
+        'Новое имя и фамилия сохранены!\n'
+    )
+    add_message_to_delete_list(message, context)
+    message = await update.message.reply_text(
+        'Выберите поле для редактирования ⏳',
+        reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+    )
+    add_message_to_delete_list(message, context)
+    return EDIT_START_EDIT_FIELD
 
 
 @catch_error(SAVE_EMAIL_ERROR, conv=True)
@@ -484,21 +498,21 @@ async def save_edit_email(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-        email = update.message.text
-        await update.message.delete()
-        if not await validate_email(update, context, email):
-            return EDIT_SAVE_EDIT_EMAIL
-        context.user_data['edit_account']['email'] = email
-        message = await update.message.reply_text(
-            'Новая почта сохранена!\n'
-        )
-        add_message_to_delete_list(message, context)
-        message = await update.message.reply_text(
-            'Выберите поле для редактирования ⏳',
-            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
-        )
-        add_message_to_delete_list(message, context)
-        return EDIT_START_EDIT_FIELD
+    email = update.message.text
+    await update.message.delete()
+    if not await validate_email(update, context, email):
+        return EDIT_SAVE_EDIT_EMAIL
+    context.user_data['edit_account']['email'] = email
+    message = await update.message.reply_text(
+        'Новая почта сохранена!\n'
+    )
+    add_message_to_delete_list(message, context)
+    message = await update.message.reply_text(
+        'Выберите поле для редактирования ⏳',
+        reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+    )
+    add_message_to_delete_list(message, context)
+    return EDIT_START_EDIT_FIELD
 
 
 @catch_error(SAVE_PASSWORD_ERROR, conv=True)
@@ -507,21 +521,69 @@ async def save_edit_password(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-        password = update.message.text
-        await update.message.delete()
-        if not await validate_password(update, context, password):
-            return EDIT_SAVE_EDIT_PASSWORD
-        context.user_data['edit_account']['password'] = password
-        message = await update.message.reply_text(
-            'Новый пароль сохранен!\n'
+    password = update.message.text
+    await update.message.delete()
+    if not await validate_password(update, context, password):
+        return EDIT_SAVE_EDIT_PASSWORD
+    context.user_data['edit_account']['password'] = password
+    message = await update.message.reply_text(
+        'Новый пароль сохранен!\n'
+    )
+    add_message_to_delete_list(message, context)
+    message = await update.message.reply_text(
+        'Выберите поле для редактирования ⏳',
+        reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+    )
+    add_message_to_delete_list(message, context)
+    return EDIT_START_EDIT_FIELD
+
+
+@catch_error(SAVE_AVATAR_ERROR)
+@clear_messages
+async def save_avatar(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+    if not validate_empty_photo(update):
+        return EDIT_SAVE_AVATAR
+    photo = update.message.photo[-1]
+    file_id = photo.file_id
+    tg_file = await context.bot.get_file(file_id)
+    file_data = await tg_file.download_as_bytearray()
+    
+    async with aiohttp.ClientSession() as session:
+        form = aiohttp.FormData()
+        form.add_field(
+            name='file',
+            value=file_data,
+            filename=f'{update.effective_user.id}.jpg',
+            content_type='image/jpg'
         )
-        add_message_to_delete_list(message, context)
-        message = await update.message.reply_text(
-            'Выберите поле для редактирования ⏳',
-            reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
-        )
-        add_message_to_delete_list(message, context)
-        return EDIT_START_EDIT_FIELD
+        async with session.post(
+            ADD_NEW_AVATAR,
+            data=form,
+            headers=get_headers(context)
+        ) as response:
+            if response.status != HTTPStatus.OK:
+                error_data = await response.json()
+                message = await update.message.reply_text(
+                    f'Ошибка при загрузке фото: {error_data} '
+                    'Повторите отправку!'
+                )
+                add_message_to_delete_list(message, context)
+                return EDIT_ADD_AVATAR
+            photo = await response.json()
+    context.user_data['edit_account']['photo_id'] = photo['id']
+    message = await update.message.reply_text(
+        'Новая аватарка успешно загружена!\n'
+    )
+    add_message_to_delete_list(message, context)
+    message = await update.message.reply_text(
+        'Выберите поле для редактирования ⏳',
+        reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
+    )
+    add_message_to_delete_list(message, context)
+    return EDIT_START_EDIT_FIELD
 
 @catch_error(EDIT_FINISH_ERROR)
 @clear_messages
@@ -667,6 +729,9 @@ def handlers_installer(
             ],
             EDIT_SAVE_EDIT_PASSWORD: [
                 MessageHandler(MESSAGE_HANDLERS, save_edit_password)
+            ],
+            EDIT_ADD_AVATAR: [
+                MessageHandler(MESSAGE_HANDLERS, save_avatar)
             ],
             EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')
