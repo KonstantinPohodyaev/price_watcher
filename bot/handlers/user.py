@@ -14,7 +14,7 @@ from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
                                         MENU, ACCOUNT_SETTINGS,
                                         EDIT_ADD_AVATAR)
-from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
+from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction,
@@ -80,7 +80,7 @@ REGISTRATION_ERROR = (
     'Возникла ошибка при регистрации пользователя! 🚫'
 )
 AUTHORIZATION_ERROR = (
-    'Ошибка при получении JWT-токена. Повторите регистрацию! 🚫'
+    'Ошибка при получении JWT-токена. Повторите авторизацию! 🚫'
 )
 DELETE_ACCOUNT_ERROR = 'Ошибка при удалении аккаунта! 🚫'
 SELECT_EDIT_FIELD_ERROR = 'Ошибка при выборе поля редактирования! 🚫'
@@ -176,7 +176,7 @@ async def check_account_data(
             active='✅' if account['is_active'] else '❌',
             is_verified='✅' if account['is_verified'] else '❌',
             is_superuser='✅' if account['is_superuser'] else '❌',
-            jwt_token=account['jwt_token']
+            jwt_token=account['jwt_token'] if account.get('jwt_token') else '❌'
         ),
         parse_mode=PARSE_MODE,
         reply_markup=InlineKeyboardMarkup(buttons)
@@ -324,7 +324,7 @@ async def authorization(
                 )
             )
         ) as response:
-            if response.status == 200:
+            if response.status == HTTPStatus.OK:
                 buttons = [
                     [
                         InlineKeyboardButton(
@@ -544,7 +544,7 @@ async def save_avatar(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    if not validate_empty_photo(update):
+    if not validate_empty_photo(update, context):
         return EDIT_SAVE_AVATAR
     photo = update.message.photo[-1]
     file_id = photo.file_id
@@ -564,6 +564,13 @@ async def save_avatar(
             data=form,
             headers=get_headers(context)
         ) as response:
+            if response.status == HTTPStatus.UNAUTHORIZED:
+                message = await update.message.reply_text(
+                    'Срок действия токена истек(\n'
+                    'Повторите авторизацию! /auth'
+                )
+                add_message_to_delete_list(message, context)
+                return ConversationHandler.END
             if response.status != HTTPStatus.OK:
                 error_data = await response.json()
                 message = await update.message.reply_text(
@@ -730,8 +737,8 @@ def handlers_installer(
             EDIT_SAVE_EDIT_PASSWORD: [
                 MessageHandler(MESSAGE_HANDLERS, save_edit_password)
             ],
-            EDIT_ADD_AVATAR: [
-                MessageHandler(MESSAGE_HANDLERS, save_avatar)
+            EDIT_SAVE_AVATAR: [
+                MessageHandler(PHOTO_HANDLERS, save_avatar)
             ],
             EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')

@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import aiofiles
 from fastapi import APIRouter, status, UploadFile, Depends
@@ -29,7 +30,8 @@ async def upload_media(
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user)
 ):
-    filename = f'{user.telegram_id}_{file.filename}'
+    ext = os.path.splitext(file.filename)[1]
+    filename = f'{user.telegram_id}_{uuid.uuid4().hex}{ext}'
     file_path = os.path.join(UPLOAD_DIR, filename)
     async with aiofiles.open(file_path, 'wb') as new_file:
         await new_file.write(await file.read())
