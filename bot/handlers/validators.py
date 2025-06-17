@@ -57,6 +57,7 @@ MARKETPLACE_NOT_ALLOWED_ERROR = (
     'не можем 😱\n'
     'Выберите'
 )
+EMPTY_PHOTO_ERROR = 'Пожалуйста, загрузите фото! 😱'
 
 
 async def validate_full_name(
@@ -165,3 +166,16 @@ async def validate_price(
         add_message_to_delete_list(message, context)
         return False
     return str_price
+
+
+async def validate_empty_photo(
+    interaction: Update | CallbackQuery,
+    context: ContextTypes.DEFAULT_TYPE
+) -> bool:
+    if not interaction.message.photo:
+        message = await interaction.message.reply_text(
+            EMPTY_PHOTO_ERROR
+        )
+        add_message_to_delete_list(message, context)
+        return False
+    return True
