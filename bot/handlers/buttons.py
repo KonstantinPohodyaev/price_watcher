@@ -1,11 +1,11 @@
-from telegram import ReplyKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardButton, ReplyKeyboardMarkup
 
-from bot.handlers.callback_data import (
-    SHOW_ALL_TRACK, ADD_TRACK, START_NOTIFICATIONS, ACCOUNT_SETTINGS,
-    BOT_INFO, MENU, START_AUTHORIZATION, START_REGISTRATION,
-    WILDBERRIES, OZON, CHECK_HISTORY, CONFIRM_DELETE, CANCEL_DELETE
-)
-
+from bot.handlers.callback_data import (ACCOUNT_SETTINGS, ADD_TRACK, BOT_INFO,
+                                        CANCEL_DELETE, CHECK_HISTORY,
+                                        CONFIRM_DELETE, MENU, OZON,
+                                        SHOW_ALL_TRACK, START_AUTHORIZATION,
+                                        START_NOTIFICATIONS,
+                                        START_REGISTRATION, WILDBERRIES)
 
 MAIN_REPLY_BUTTONS = ['Меню 🔥', 'Авторизация 🔐', 'Ваш аккаунт 📱']
 

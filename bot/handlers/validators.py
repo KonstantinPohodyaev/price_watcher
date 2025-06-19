@@ -6,7 +6,7 @@ from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
 from bot.endpoints import GET_USER_BY_EMAIL
-from bot.handlers.utils import get_interaction, add_message_to_delete_list
+from bot.handlers.utils import add_message_to_delete_list, get_interaction
 
 VALIDATE_FULL_NAME_PATTERN = r'^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
 FULL_NAME_PATTERN_ERROR = (

@@ -1,25 +1,26 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardRemove, Update, InputFile)
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, InputFile,
+                      ReplyKeyboardRemove, Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
-                           USERS_REFRESH_ME, ADD_NEW_AVATAR)
-from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
+from bot.endpoints import (ADD_NEW_AVATAR, DELETE_USER_BY_ID, GET_JWT_TOKEN,
+                           REGISTER_USER, USERS_REFRESH_ME)
+from bot.handlers.callback_data import (ACCOUNT_SETTINGS, EDIT_ADD_AVATAR,
+                                        EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
-                                        MENU, ACCOUNT_SETTINGS,
-                                        EDIT_ADD_AVATAR)
+                                        MENU)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
-from bot.handlers.pre_process import load_data_for_register_user, clear_messages
-from bot.handlers.utils import (catch_error, check_authorization,
-                                check_password, get_headers, get_interaction,
-                                add_message_to_delete_list)
-from bot.handlers.validators import (validate_email, validate_full_name,
-                                     validate_password, validate_empty_photo)
+from bot.handlers.pre_process import (clear_messages,
+                                      load_data_for_register_user)
+from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+                                check_authorization, check_password,
+                                get_headers, get_interaction)
+from bot.handlers.validators import (validate_email, validate_empty_photo,
+                                     validate_full_name, validate_password)
 
 # Состояния для ConversationHandler
 

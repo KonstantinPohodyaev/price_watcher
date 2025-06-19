@@ -1,15 +1,14 @@
 import os
-
 from contextlib import asynccontextmanager
 from datetime import datetime
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from src.api.v1.routers import main_router
-from src.core.config import settings
+from src.core.config import STATIC_DIR, UPLOAD_DIR, settings
 from src.core.init_db import create_first_superuser
-from src.core.config import UPLOAD_DIR, STATIC_DIR
 
 load_dotenv()
 

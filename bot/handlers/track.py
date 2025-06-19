@@ -8,22 +8,23 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
 from bot.endpoints import (CREATE_NEW_TRACK, DELETE_TRACK_BY_ID,
                            GET_TRACKS_PRICE_HISTORY, USERS_TRACKS,
                            USERS_TRACKS_BY_ID)
-from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
-                                        SHOW_ALL_TRACK, WILDBERRIES,
-                                        DELETE_TRACK, CONFIRM_DELETE, CANCEL_DELETE)
+from bot.handlers.buttons import (CHECK_HISTORY_BUTTONS,
+                                  CONFIRM_TRACK_DELETE_BUTTONS,
+                                  FINISH_DELETE_TRACK_BUTTONS,
+                                  GO_BACK_NEW_TARGET_PRICE_BUTTONS,
+                                  SELECT_MARKETPLACE_BUTTONS, SHOW_ALL_BUTTONS,
+                                  get_create_track_buttons, get_track_keyboard)
+from bot.handlers.callback_data import (ADD_TRACK, CANCEL_DELETE,
+                                        CHECK_HISTORY, CONFIRM_DELETE,
+                                        DELETE_TRACK, MENU, OZON,
+                                        SHOW_ALL_TRACK, WILDBERRIES)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
-from bot.handlers.pre_process import load_data_for_register_user, clear_messages
-from bot.handlers.utils import (catch_error, check_authorization, get_headers,
-                                get_interaction,
-                                 add_message_to_delete_list,
-                                 send_tracked_message)
+from bot.handlers.pre_process import (clear_messages,
+                                      load_data_for_register_user)
+from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+                                check_authorization, get_headers,
+                                get_interaction, send_tracked_message)
 from bot.handlers.validators import validate_price
-from bot.handlers.buttons import (
-    SHOW_ALL_BUTTONS, GO_BACK_NEW_TARGET_PRICE_BUTTONS,
-    SELECT_MARKETPLACE_BUTTONS, get_track_keyboard, get_create_track_buttons,
-    CHECK_HISTORY_BUTTONS, CONFIRM_TRACK_DELETE_BUTTONS,
-    FINISH_DELETE_TRACK_BUTTONS
-)
 
 # Состояния для ConversationHandler
 SAVE_NEW_TARGET_PRICE = 'save_new_target_price'
