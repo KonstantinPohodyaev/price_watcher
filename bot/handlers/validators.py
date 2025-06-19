@@ -155,7 +155,7 @@ async def validate_price(
     str_price = price.strip().replace(',', '.')
     if not re.match(PRICE_PATTERN, str_price):
         message = await interaction.message.reply_text(
-            WRONG_PASSWORD_PATTERN_ERROR
+            PRICE_PATTERN_ERROR
         )
         add_message_to_delete_list(message, context)
         return False
