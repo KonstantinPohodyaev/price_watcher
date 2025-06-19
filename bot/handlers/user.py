@@ -2,19 +2,18 @@ from http import HTTPStatus
 
 import aiohttp
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardRemove, Update)
+                      ReplyKeyboardRemove, Update, InputFile)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
 from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
                            USERS_REFRESH_ME, ADD_NEW_AVATAR)
-from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
                                         MENU, ACCOUNT_SETTINGS,
                                         EDIT_ADD_AVATAR)
-from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
+from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
                                 check_password, get_headers, get_interaction,
@@ -69,6 +68,12 @@ ACCOUNT_DATA_MESSAGE = """
 <code>{jwt_token}</code>
 """
 
+ACCOUNT_DATA_NAVIGATION_MESSAGE = """
+📍 <b>Навигация</b>
+───────────────
+⬅️ Назад | 🏠 Меню
+"""
+
 USER_CARD = """
 👤 <b>Полное имя:</b> {name} {surname}  
 📧 <b>Почта:</b> <code>{email}</code>  
@@ -80,7 +85,7 @@ REGISTRATION_ERROR = (
     'Возникла ошибка при регистрации пользователя! 🚫'
 )
 AUTHORIZATION_ERROR = (
-    'Ошибка при получении JWT-токена. Повторите регистрацию! 🚫'
+    'Ошибка при получении JWT-токена. Повторите авторизацию! 🚫'
 )
 DELETE_ACCOUNT_ERROR = 'Ошибка при удалении аккаунта! 🚫'
 SELECT_EDIT_FIELD_ERROR = 'Ошибка при выборе поля редактирования! 🚫'
@@ -163,25 +168,33 @@ async def check_account_data(
     account = context.user_data['account']
     buttons = [
         [
-            InlineKeyboardButton('Меню 📦', callback_data=MENU)
+            InlineKeyboardButton('Меню 📦', callback_data=MENU),
+            InlineKeyboardButton('Назад ⬅️', callback_data=ACCOUNT_SETTINGS)
         ]
     ]
-    message = await update.message.reply_text(
-        text=ACCOUNT_DATA_MESSAGE.format(
-            name=account['name'],
-            surname=account['surname'],
-            email=account['email'],
-            telegram_id=account['telegram_id'],
-            chat_id=account['chat_id'],
-            active='✅' if account['is_active'] else '❌',
-            is_verified='✅' if account['is_verified'] else '❌',
-            is_superuser='✅' if account['is_superuser'] else '❌',
-            jwt_token=account['jwt_token']
-        ),
-        parse_mode=PARSE_MODE,
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
-    add_message_to_delete_list(message, context)
+    if user_avatar := account.get('media'):
+        try:
+            with open(user_avatar[-1]['path'], 'rb') as image_file:
+                avatar_message = await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=InputFile(image_file),
+                    caption=ACCOUNT_DATA_MESSAGE.format(
+                        name=account['name'],
+                        surname=account['surname'],
+                        email=account['email'],
+                        telegram_id=account['telegram_id'],
+                        chat_id=account['chat_id'],
+                        active='✅' if account['is_active'] else '❌',
+                        is_verified='✅' if account['is_verified'] else '❌',
+                        is_superuser='✅' if account['is_superuser'] else '❌',
+                        jwt_token=account['jwt_token'] if account.get('jwt_token') else '❌'
+                    ),
+                    parse_mode=PARSE_MODE,
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                add_message_to_delete_list(avatar_message, context)
+        except Exception as error:
+            print(f'Не удалось отправить аватар: {str(error)}')
 
 
 @clear_messages
@@ -217,7 +230,7 @@ async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @clear_messages
 async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    entered_email = update.message.text
+    entered_email = update.message.text.lower()
     await update.message.delete()
     if not await validate_email(update, context, entered_email):
         return 'email'
@@ -246,23 +259,24 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if response.status == HTTPStatus.CREATED:
                 user = await response.json()
                 message = await update.message.reply_text(
-                    'Регистрация закончена!',
-                    reply_markup=REPLY_KEYBOARD
+                    'Регистрация закончена!'
                 )
                 add_message_to_delete_list(message, context)
                 buttons = [
                     [
                         InlineKeyboardButton(
-                            'Авторизация', callback_data='authorization'
+                            '🔐 Авторизация', callback_data='authorization'
                         )
                     ]
                 ]
                 message = await update.message.reply_text(
                     text=(
-                        f'Привет, {user["name"]}! '
-                        f'Вот твой id: {user["id"]}'
-                    ),
-                    reply_markup=InlineKeyboardMarkup(buttons)
+                    f"👋 Привет, <b>{user['name']}</b>!\n\n"
+                    f"🆔 Твой уникальный ID: <code>{user['id']}</code>\n\n"
+                    f"Чтобы продолжить, нажми кнопку ниже 👇"
+                ),
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=PARSE_MODE
                 )
                 add_message_to_delete_list(message, context)
             else:
@@ -324,7 +338,7 @@ async def authorization(
                 )
             )
         ) as response:
-            if response.status == 200:
+            if response.status == HTTPStatus.OK:
                 buttons = [
                     [
                         InlineKeyboardButton(
@@ -544,7 +558,7 @@ async def save_avatar(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    if not validate_empty_photo(update):
+    if not await validate_empty_photo(update, context):
         return EDIT_SAVE_AVATAR
     photo = update.message.photo[-1]
     file_id = photo.file_id
@@ -564,6 +578,13 @@ async def save_avatar(
             data=form,
             headers=get_headers(context)
         ) as response:
+            if response.status == HTTPStatus.UNAUTHORIZED:
+                message = await update.message.reply_text(
+                    'Срок действия токена истек(\n'
+                    'Повторите авторизацию! /auth'
+                )
+                add_message_to_delete_list(message, context)
+                return ConversationHandler.END
             if response.status != HTTPStatus.OK:
                 error_data = await response.json()
                 message = await update.message.reply_text(
@@ -609,7 +630,7 @@ async def finish_edit(
                 ]
             ]
             message = await query.message.reply_text(
-                text='Данные обновлены ✅\n' + 
+                text='Данные обновлены ✅\n' +
                 USER_CARD.format(
                     name=new_user_data['name'],
                     surname=new_user_data['surname'],
@@ -730,8 +751,8 @@ def handlers_installer(
             EDIT_SAVE_EDIT_PASSWORD: [
                 MessageHandler(MESSAGE_HANDLERS, save_edit_password)
             ],
-            EDIT_ADD_AVATAR: [
-                MessageHandler(MESSAGE_HANDLERS, save_avatar)
+            EDIT_SAVE_AVATAR: [
+                MessageHandler(PHOTO_HANDLERS, save_avatar)
             ],
             EDIT_FINISH_EDIT: [
                 CallbackQueryHandler(finish_edit, pattern='^finish_edit$')

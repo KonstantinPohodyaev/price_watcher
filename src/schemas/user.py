@@ -4,6 +4,7 @@ from fastapi_users import schemas
 from pydantic import BaseModel, Field
 
 from src.schemas.jwt_auth import JWTRead, JWTTokenUpdate
+from src.schemas.media import MediaDB
 
 
 class UserRead(schemas.BaseUser[int]):
@@ -14,6 +15,7 @@ class UserRead(schemas.BaseUser[int]):
     hashed_password: Optional[str]
     jwt_token: Optional[JWTRead]
     chat_id: Optional[str]
+    media: Optional[list[MediaDB]]
 
     class Config:
         from_attributes = True

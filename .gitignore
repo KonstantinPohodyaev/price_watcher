@@ -164,4 +164,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 .vscode/
->>>>>>> e3a765a383334ef6c97aa9da5d1621447d7171c6
+media/
+

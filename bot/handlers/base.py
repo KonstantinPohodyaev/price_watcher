@@ -1,10 +1,9 @@
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardMarkup, Update)
+                      Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, MessageHandler,
                           filters)
 
-from bot.handlers.buttons import REPLY_KEYBOARD
 from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
                                         START_AUTHORIZATION,
                                         START_NOTIFICATIONS,
@@ -69,8 +68,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
             ]
         load_message = await update.message.reply_text(
-            'Загрузка интерфейса...',
-            reply_markup=REPLY_KEYBOARD
+            'Загрузка интерфейса...'
         )
         add_message_to_delete_list(load_message, context)
         message = await update.message.reply_text(
