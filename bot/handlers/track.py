@@ -312,7 +312,6 @@ async def create_new_track(
                         error_message=error_data.get('detail')
                     )
                 )
-                # add_message_to_delete_list(message, context)
                 await select_marketplace(update, context)
                 return ADD_TRACK_ADD_ARTICLE
             new_track = await response.json()
