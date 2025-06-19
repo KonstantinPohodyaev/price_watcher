@@ -13,7 +13,8 @@ class MediaBase(BaseModel):
     """Базовая Pydantic-схема для модели Media."""
     user_id: Optional[int] = Field(None)
     filename: Optional[str] = Field(None)
-    path:  Optional[str] = Field(None)
+    url: Optional[str] = Field(None)
+    path: Optional[str] = Field(None)
 
     class Config:
         """Класс настроек."""
@@ -30,12 +31,14 @@ class MediaDB(MediaBase):
         """Класс настроек."""
 
         title = MEDIA_DB_TITLE
+        from_attributes = True
 
 
 class MediaCreate(BaseModel):
     """Pydantic-схема для создания объекта Media."""
     user_id: int
     filename: str
+    url: str
     path: str
 
     class Config:

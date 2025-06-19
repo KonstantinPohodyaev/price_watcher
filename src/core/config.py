@@ -9,6 +9,9 @@ DEFAULT_APP_DESCRIPTION = 'Сервис для просмотра цен.'
 
 load_dotenv()
 
+UPLOAD_DIR = 'media'
+STATIC_DIR = '/media'
+
 
 class Settings(BaseSettings):
     db_dialect: str = os.getenv('DB_DIALECT')

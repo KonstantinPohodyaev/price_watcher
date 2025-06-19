@@ -207,6 +207,7 @@ async def update_me(
         )
         user_update_dict = user_update.model_dump(exclude_unset=True)
         user_update_dict.pop('jwt_token', None)
+        user_update_dict.pop('media', None)
         cleaned_user_update = UserUpdate(**user_update_dict)
         user = await user_manager.update(
             cleaned_user_update, user, safe=True, request=request

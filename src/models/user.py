@@ -60,7 +60,7 @@ class User(Base, SQLAlchemyBaseUserTable):
         lazy='selectin',
         cascade='all, delete-orphan'
     )
-    media: Mapped['Media'] = relationship(
+    media: Mapped[list['Media']] = relationship(
         'Media',
         back_populates='user',
         lazy='selectin',

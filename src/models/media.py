@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -9,6 +9,8 @@ from src.database.annotations import int_pk
 if TYPE_CHECKING:
     from src.models.user import User
 
+
+MEDIA_URL_MAX_LENGTH = 2 ** 11
 
 
 class Media(Base):
@@ -25,3 +27,6 @@ class Media(Base):
     )
     filename: Mapped[str] = mapped_column(nullable=False)
     path: Mapped[str] = mapped_column(nullable=False)
+    url: Mapped[str] = mapped_column(
+        String(MEDIA_URL_MAX_LENGTH), nullable=False
+    )
