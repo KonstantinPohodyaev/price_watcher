@@ -134,7 +134,7 @@ async def start_notifications(
             chat_id=query.from_user.id
         )
     )
-    send_tracked_message(
+    await send_tracked_message(
         query,
         context,
         text=NOTIFICATION_ON_MESSAGE,

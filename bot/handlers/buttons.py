@@ -3,7 +3,7 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardButton
 from bot.handlers.callback_data import (
     SHOW_ALL_TRACK, ADD_TRACK, START_NOTIFICATIONS, ACCOUNT_SETTINGS,
     BOT_INFO, MENU, START_AUTHORIZATION, START_REGISTRATION,
-    WILDBERRIES, OZON, CHECK_HISTORY
+    WILDBERRIES, OZON, CHECK_HISTORY, CONFIRM_DELETE, CANCEL_DELETE
 )
 
 
@@ -13,6 +13,13 @@ REPLY_KEYBOARD = ReplyKeyboardMarkup(
     [MAIN_REPLY_BUTTONS],
     resize_keyboard=True
 )
+
+# buttons
+GO_TO_TRACK_LIST_BUTTON = InlineKeyboardButton(
+    'Вернуться к списку товаров ⬅️',
+    callback_data=SHOW_ALL_TRACK
+)
+
 # handlers.base buttons
 MENU_BUTTONS = [
     [
@@ -110,10 +117,7 @@ SHOW_ALL_BUTTONS = [
 ]
 GO_BACK_NEW_TARGET_PRICE_BUTTONS = [
     [
-        InlineKeyboardButton(
-            'Вернуться к списку ⬅️',
-            callback_data=f'{SHOW_ALL_TRACK}'
-        ),
+        GO_TO_TRACK_LIST_BUTTON,
         InlineKeyboardButton(
             'В меню 📦',
             callback_data=MENU
@@ -139,9 +143,25 @@ def get_create_track_buttons(
     return (
         get_track_keyboard(track_id)
         + [[
-            InlineKeyboardButton(
-                'Вернуться к списку товаров ⬅️',
-                callback_data=SHOW_ALL_TRACK
-            )
+            GO_TO_TRACK_LIST_BUTTON
         ]]
     )
+
+CHECK_HISTORY_BUTTONS = [
+    [GO_TO_TRACK_LIST_BUTTON]
+]
+CONFIRM_TRACK_DELETE_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Подтвердить 🖱️',
+            callback_data=CONFIRM_DELETE
+        ),
+        InlineKeyboardButton(
+            'Назад ⬅️',
+            callback_data=CANCEL_DELETE
+        )
+    ]
+]
+FINISH_DELETE_TRACK_BUTTONS = [
+    [GO_TO_TRACK_LIST_BUTTON]
+]

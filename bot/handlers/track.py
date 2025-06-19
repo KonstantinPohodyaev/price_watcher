@@ -10,7 +10,7 @@ from bot.endpoints import (CREATE_NEW_TRACK, DELETE_TRACK_BY_ID,
                            USERS_TRACKS_BY_ID)
 from bot.handlers.callback_data import (ADD_TRACK, CHECK_HISTORY, MENU, OZON,
                                         SHOW_ALL_TRACK, WILDBERRIES,
-                                        DELETE_TRACK)
+                                        DELETE_TRACK, CONFIRM_DELETE, CANCEL_DELETE)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization, get_headers,
@@ -20,7 +20,9 @@ from bot.handlers.utils import (catch_error, check_authorization, get_headers,
 from bot.handlers.validators import validate_price
 from bot.handlers.buttons import (
     SHOW_ALL_BUTTONS, GO_BACK_NEW_TARGET_PRICE_BUTTONS,
-    SELECT_MARKETPLACE_BUTTONS, get_track_keyboard, get_create_track_buttons
+    SELECT_MARKETPLACE_BUTTONS, get_track_keyboard, get_create_track_buttons,
+    CHECK_HISTORY_BUTTONS, CONFIRM_TRACK_DELETE_BUTTONS,
+    FINISH_DELETE_TRACK_BUTTONS
 )
 
 # Состояния для ConversationHandler
@@ -31,9 +33,6 @@ ADD_TRACK_ADD_TARGET_PRICE = 'add_target_price'
 ADD_TRACK_CREATE_NEW_TRACK = 'create_new_track'
 
 FINISH_DELETE_TRACK = 'delete_track'
-CONFIRM_DELETE = 'confirm'
-CANCEL_DELETE = 'cancel'
-
 
 # Сообщения для reply_text
 SHOW_ALL_ERROR = (
@@ -108,6 +107,18 @@ _________________________
 SUCCESS_SAVE_NEW_TARGET_PRICE_MESSAGE = (
     'Цена успешно обновлена на {new_target_price}! ✅'
 )
+EMPTY_TRACK_HISTORY_MESSAGE = 'История товара пуста('
+TRACK_HISTORY_MESSAGE = 'История товара {track_id}'
+TRACK_HISTORY_NAVIGATION = 'Навигация 📋'
+CONFIRM_DELETE_MESSAGE = """
+{track_card}
+_________________________
+Вы точно хотите удалить товар с id = {track_id}
+"""
+CANCEL_DELETE_MESSAGE = 'Удаление товара с id = {track_id} отменено!'
+SUCCESS_DELETE_MESSAGE = 'Товар с id = {track_id} успешно удален! ✅'
+
+
 
 
 @catch_error(SHOW_ALL_ERROR)
@@ -346,40 +357,35 @@ async def check_track_history(
             headers=get_headers(context)
         ) as response:
             writes = await response.json()
-            navigate_buttons = [
-                [
-                    InlineKeyboardButton(
-                        'Вернуться к списку товаров ⬅️',
-                        callback_data=f'{SHOW_ALL_TRACK}'
-                    )
-                ]
-            ]
             if not writes:
                 await query.message.reply_text(
-                    'История товара пуста(',
-                    reply_markup=InlineKeyboardMarkup(navigate_buttons)
+                    EMPTY_TRACK_HISTORY_MESSAGE,
+                    reply_markup=InlineKeyboardMarkup(CHECK_HISTORY_BUTTONS)
                 )
                 return
-            title_message = await query.message.reply_text(
-                f'История товара {track_id}'
+            await send_tracked_message(
+                query,
+                context,
+                text=TRACK_HISTORY_MESSAGE.format(
+                    track_id=track_id
+                )
             )
-            add_message_to_delete_list(title_message, context)
             for write in writes:
                 date, time = write['created_at'].split('T')
-                message = await query.message.reply_text(
+                await send_tracked_message(
+                    query,
+                    context,
                     text=PRICE_HISTORY_CARD.format(
                         price=write['price'],
                         date=date,
                         time=time
-                    ),
-                    parse_mode=PARSE_MODE
+                    )
                 )
-                add_message_to_delete_list(message, context)
-            message = await query.message.reply_text(
-                'Навигация 📋',
-                reply_markup=InlineKeyboardMarkup(navigate_buttons)
+            await send_tracked_message(
+                query,
+                context,
+                text=TRACK_HISTORY_NAVIGATION
             )
-            add_message_to_delete_list(message, context)
 
 
 async def confirm_track_delete(
@@ -391,30 +397,16 @@ async def confirm_track_delete(
     track_id = query.data.split('_')[-1]
     context.user_data['deleted_track'] = dict()
     context.user_data['deleted_track']['id'] = track_id
-    buttons = [
-        [
-            InlineKeyboardButton(
-                'Подтвердить 🖱️',
-                callback_data=CONFIRM_DELETE
-            ),
-            InlineKeyboardButton(
-                'Назад ⬅️',
-                callback_data=CANCEL_DELETE
-            )
-        ]
-    ]
-    message = await query.message.edit_text(
-        text=(
-            track_card
-            + '\n'
-            + f'Вы точно хотите удалить товар с id = {track_id}'
+    await query.message.edit_text(
+        text=CONFIRM_DELETE_MESSAGE.format(
+            track_card=track_card,
+            track_id=track_id
         ),
-        reply_markup=InlineKeyboardMarkup(buttons),
+        reply_markup=InlineKeyboardMarkup(CONFIRM_TRACK_DELETE_BUTTONS),
         parse_mode=PARSE_MODE
-        
     )
-    # add_message_to_delete_list(message, context)
     return FINISH_DELETE_TRACK
+
 
 @catch_error(DELETE_TRACK_ERROR, conv=True)
 @clear_messages
@@ -424,21 +416,15 @@ async def finish_delete_track(
 ):
     query = update.callback_query
     await query.answer()
-    buttons = [
-        [
-            InlineKeyboardButton(
-                'К списку товаров ⬅️',
-                callback_data=SHOW_ALL_TRACK
-            )
-        ]
-    ]
     if query.data == CANCEL_DELETE:
-        message = await query.message.reply_text(
-            f'Удаление товара с id = '
-            f'{context.user_data["deleted_track"]["id"]} отменено!',
-            reply_markup=InlineKeyboardMarkup(buttons)
+        await send_tracked_message(
+            query,
+            context,
+            text=CANCEL_DELETE_MESSAGE.format(
+                track_id=context.user_data['deleted_track']['id']
+            ),
+            reply_markup=InlineKeyboardMarkup(FINISH_DELETE_TRACK_BUTTONS)
         )
-        add_message_to_delete_list(message, context)
         return ConversationHandler.END
     async with aiohttp.ClientSession() as session:
         async with session.delete(
@@ -447,12 +433,14 @@ async def finish_delete_track(
             ),
             headers=get_headers(context)
         ):
-            message = await query.message.reply_text(
-                f'Товар с id = {context.user_data["deleted_track"]["id"]} '
-                f'успешно удален! ✅',
-                reply_markup=InlineKeyboardMarkup(buttons)
+            await send_tracked_message(
+                query,
+                context,
+                text=SUCCESS_DELETE_MESSAGE.format(
+                    track_id=context.user_data['deleted_track']['id']
+                ),
+                reply_markup=InlineKeyboardMarkup(FINISH_DELETE_TRACK_BUTTONS)
             )
-            add_message_to_delete_list(message, context)
     return ConversationHandler.END
 
 
