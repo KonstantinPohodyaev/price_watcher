@@ -148,6 +148,7 @@ async def account_settings(
 async def load_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    await update.message.delete()
     buttons = [
         [
             InlineKeyboardButton('Меню 📦', callback_data=MENU)
@@ -165,6 +166,7 @@ async def load_account_data(
 async def check_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    await update.message.delete()
     account = context.user_data['account']
     buttons = [
         [
@@ -172,29 +174,37 @@ async def check_account_data(
             InlineKeyboardButton('Назад ⬅️', callback_data=ACCOUNT_SETTINGS)
         ]
     ]
+    user_data = ACCOUNT_DATA_MESSAGE.format(
+        name=account['name'],
+        surname=account['surname'],
+        email=account['email'],
+        telegram_id=account['telegram_id'],
+        chat_id=account['chat_id'],
+        active='✅' if account['is_active'] else '❌',
+        is_verified='✅' if account['is_verified'] else '❌',
+        is_superuser='✅' if account['is_superuser'] else '❌',
+        jwt_token=account['jwt_token'] if account.get('jwt_token') else '❌'
+    )
     if user_avatar := account.get('media'):
         try:
             with open(user_avatar[-1]['path'], 'rb') as image_file:
                 avatar_message = await context.bot.send_photo(
                     chat_id=update.effective_chat.id,
                     photo=InputFile(image_file),
-                    caption=ACCOUNT_DATA_MESSAGE.format(
-                        name=account['name'],
-                        surname=account['surname'],
-                        email=account['email'],
-                        telegram_id=account['telegram_id'],
-                        chat_id=account['chat_id'],
-                        active='✅' if account['is_active'] else '❌',
-                        is_verified='✅' if account['is_verified'] else '❌',
-                        is_superuser='✅' if account['is_superuser'] else '❌',
-                        jwt_token=account['jwt_token'] if account.get('jwt_token') else '❌'
-                    ),
+                    caption=user_data,
                     parse_mode=PARSE_MODE,
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
                 add_message_to_delete_list(avatar_message, context)
         except Exception as error:
             print(f'Не удалось отправить аватар: {str(error)}')
+    else:
+        message = await update.message.reply_text(
+            text=user_data,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=PARSE_MODE
+        )
+        add_message_to_delete_list(message, context)
 
 
 @clear_messages
@@ -271,9 +281,9 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
                 message = await update.message.reply_text(
                     text=(
-                    f"👋 Привет, <b>{user['name']}</b>!\n\n"
-                    f"🆔 Твой уникальный ID: <code>{user['id']}</code>\n\n"
-                    f"Чтобы продолжить, нажми кнопку ниже 👇"
+                    f'👋 Привет, <b>{user["name"]}</b>!\n\n'
+                    f'🆔 Твой уникальный ID: <code>{user["id"]}</code>\n\n'
+                    f'Чтобы продолжить, нажми кнопку ниже 👇'
                 ),
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=PARSE_MODE
@@ -308,6 +318,12 @@ async def get_password_for_authorization(
 async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    if not context.user_data.get('account'):
+        message = await update.message.reply_text(
+            'Попробуйте обновить ваши данные! /load_data'
+        )
+        add_message_to_delete_list(message, context)
+        return ConversationHandler.END
     entered_password = update.message.text
     await update.message.delete()
     async with aiohttp.ClientSession() as session:

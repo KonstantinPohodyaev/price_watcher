@@ -11,6 +11,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
 from bot.handlers.callback_data import CHECK_HISTORY
+from bot.handlers.constants import PARSE_MODE
 
 password_hasher = PasswordHasher()
 
@@ -160,3 +161,19 @@ def get_track_keyboard(track_id: int) -> list[InlineKeyboardButton]:
             )
         ]
     ]
+
+
+async def send_tracked_message(
+    interaction: Update | CallbackQuery,
+    context: ContextTypes.DEFAULT_TYPE,
+    text: str,
+    reply_markup: InlineKeyboardMarkup = None,
+    parse_mode: str = PARSE_MODE
+) -> None:
+    """Функция для одновременной отправки и отслеживания сообщения."""
+    message = await interaction.message.reply_text(
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode=parse_mode
+    )
+    add_message_to_delete_list(message, context)

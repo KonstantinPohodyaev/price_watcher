@@ -4,17 +4,17 @@ from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, MessageHandler,
                           filters)
 
-from bot.handlers.callback_data import (ADD_TRACK, MENU, SHOW_ALL_TRACK,
-                                        START_AUTHORIZATION,
-                                        START_NOTIFICATIONS,
-                                        START_REGISTRATION, BOT_INFO,
-                                        ACCOUNT_SETTINGS)
-from bot.handlers.constants import PARSE_MODE
+from bot.handlers.callback_data import MENU, START_NOTIFICATIONS, BOT_INFO
 from bot.handlers.pre_process import load_data_for_register_user, clear_messages
 from bot.handlers.utils import (catch_error, check_authorization,
-                                get_interaction, add_message_to_delete_list)
+                                get_interaction, add_message_to_delete_list,
+                                send_tracked_message)
 from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,
                            periodic_check)
+from bot.handlers.buttons import (
+    MENU_BUTTONS, REGISTER_USER_BUTTONS, NOT_REGISTER_USER_BUTTONS,
+    START_REGISTRATION_BUTTONS
+)
 
 MESSAGE_HANDLERS = filters.TEXT & ~filters.COMMAND
 
@@ -36,6 +36,7 @@ INFO_MESSAGE = """
 /menu — главное меню
 """
 
+START_DECORATING_MESSAGE = 'Загрузка интерфейса...'
 START_MESSAGE = """
 <b>👋 Привет, <code>{name}</code>!</b>  
 Добро пожаловать в <b>Price Watcher</b>  
@@ -45,6 +46,18 @@ START_MESSAGE = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━  
 ℹ️ /info — информация о боте
 """
+UNREGISTERED_MESSAGE = 'Вы не зарегестрированы! 🚨'
+NOTIFICATION_ON_MESSAGE = '✅ Уведомления о снижении цены включены.'
+MENU_MESSAGE = 'Выберите интересующий вас пункт'
+
+START_NOTIFICATIONS_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Перейти в меню 📋',
+            callback_data=MENU
+        )
+    ]
+]
 
 @catch_error(START_ERROR)
 @clear_messages
@@ -52,103 +65,54 @@ START_MESSAGE = """
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('account'):
         if context.user_data['account'].get('jwt_token'):
-            buttons = [
-                [
-                    InlineKeyboardButton(
-                        'Меню 📦', callback_data=MENU
-                    )
-                ]
-            ]
+            buttons = REGISTER_USER_BUTTONS
         else:
-            buttons = [
-                [
-                   InlineKeyboardButton(
-                        'Авторизация 📦', callback_data=START_AUTHORIZATION
-                    )
-                ]
-            ]
-        load_message = await update.message.reply_text(
-            'Загрузка интерфейса...'
+            buttons = NOT_REGISTER_USER_BUTTONS
+        await send_tracked_message(
+            update,
+            context,
+            text=START_DECORATING_MESSAGE
         )
-        add_message_to_delete_list(load_message, context)
-        message = await update.message.reply_text(
+        await send_tracked_message(
+            update,
+            context,
             text=START_MESSAGE.format(
                 name=update.message.from_user.username
             ),
-            parse_mode=PARSE_MODE,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        add_message_to_delete_list(message, context)
     else:
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    'Начать регистрацию 🔥',
-                    callback_data=START_REGISTRATION
-                )
-            ]
-        ]
-        message = await update.message.reply_text(
-            'Вы не зарегестрированы! 🚨',
+        buttons = START_REGISTRATION_BUTTONS
+        await send_tracked_message(
+            update,
+            context,
+            text=UNREGISTERED_MESSAGE,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        add_message_to_delete_list(message, context)
 
 
 @clear_messages
 async def info(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    interaction = await get_interaction(update)
-    message = await interaction.message.reply_text(
-        text=INFO_MESSAGE,
-        parse_mode=PARSE_MODE
+    await send_tracked_message(
+        await get_interaction(update),
+        context,
+        text=INFO_MESSAGE
     )
-    add_message_to_delete_list(message, context)
 
 
 @clear_messages
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    interaction = await get_interaction(update)
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text='📦 Мои товары',
-                callback_data=SHOW_ALL_TRACK
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text='➕ Добавить товар',
-                callback_data=ADD_TRACK
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text='🔔 Включить оповещения',
-                callback_data=START_NOTIFICATIONS
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text='⚙️ Настройки аккаунта',
-                callback_data=ACCOUNT_SETTINGS
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text='ℹ️ О боте',
-                callback_data=BOT_INFO
-            )
-        ],
-    ]
-    message = await interaction.message.reply_text(
-        'Выберите интересующий вас пункт',
-        reply_markup=InlineKeyboardMarkup(buttons)
+    await send_tracked_message(
+        await get_interaction(update),
+        context,
+        text=MENU_MESSAGE,
+        reply_markup=InlineKeyboardMarkup(MENU_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
+
 
 @catch_error(START_NOTIFICARIONS_ERROR)
 @clear_messages
@@ -170,19 +134,12 @@ async def start_notifications(
             chat_id=query.from_user.id
         )
     )
-    buttons = [
-        [
-            InlineKeyboardButton(
-                'Перейти в меню 📋',
-                callback_data=MENU
-            )
-        ]
-    ]
-    message = await query.message.reply_text(
-        '✅ Уведомления о снижении цены включены.',
-        reply_markup=InlineKeyboardMarkup(buttons)
+    send_tracked_message(
+        query,
+        context,
+        text=NOTIFICATION_ON_MESSAGE,
+        reply_markup=InlineKeyboardMarkup(START_NOTIFICATIONS_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
 
 
 def handlers_installer(
@@ -202,11 +159,6 @@ def handlers_installer(
     )
     application.add_handler(
         CommandHandler('menu', menu)
-    )
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT & filters.Regex('^Меню 🔥$'), menu
-        )
     )
     application.add_handler(
         CallbackQueryHandler(
