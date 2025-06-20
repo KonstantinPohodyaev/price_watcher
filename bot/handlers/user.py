@@ -138,6 +138,24 @@ AUTH_SUCCESS = """
 Выберите действие ниже 👇
 """
 
+ASK_PASSWORD_FOR_DELETE = """
+🔐 <b>Введите пароль</b> от вашего аккаунта для подтверждения удаления:
+"""
+
+INVALID_PASSWORD_DELETE = """
+❌ <b>Неверный пароль</b>. Повторите попытку:
+"""
+
+DELETE_SUCCESS = """
+🗑️ <b>Ваш аккаунт был успешно удалён!</b>
+
+Вы всегда можете зарегистрироваться снова — /start
+"""
+
+NOT_AUTHORIZED_DELETE = """
+🚫 <b>Вы не авторизованы.</b> Пожалуйста, повторите попытку позже.
+"""
+
 REGISTRATION_ERROR = (
     'Возникла ошибка при регистрации пользователя! 🚫'
 )
@@ -415,10 +433,11 @@ async def authorization(
 async def get_password_for_delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    message = await update.message.reply_text(
-        '🔐 Введите пароль от вашего аккаунта:'
+    await send_tracked_message(
+        update,
+        context,
+        text=ASK_PASSWORD_FOR_DELETE
     )
-    add_message_to_delete_list(message, context)
     return DELETE_START_DELETE
 
 
@@ -436,22 +455,21 @@ async def delete_account(
             entered_password,
             context.user_data['account']['hashed_password']
         ):
-            return 'delete_account'
+            return DELETE_START_DELETE
         if not await check_authorization(update, context):
             return ConversationHandler.END
         async with session.delete(
             DELETE_USER_BY_ID.format(
-                id=context.user_data["account"]["id"]
+                id=context.user_data['account']['id']
             ),
             headers=get_headers(context)
         ):
             context.user_data.pop('account')
-            message = await update.message.reply_text(
-                'Ваш акккаунт удален!\n'
-                'Вы можете зарегестрироваться снова - /start',
-                reply_markup=ReplyKeyboardRemove()
+            await send_tracked_message(
+                update,
+                context,
+                text=DELETE_SUCCESS
             )
-            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 
@@ -750,10 +768,6 @@ def handlers_installer(
             ),
             CommandHandler(
                 'auth', get_password_for_authorization
-            ),
-            MessageHandler(
-                filters.TEXT & filters.Regex('^Авторизация 🔐$'),
-                get_password_for_authorization
             )
         ],
         states={
