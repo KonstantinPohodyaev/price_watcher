@@ -19,6 +19,12 @@ GO_TO_TRACK_LIST_BUTTON = InlineKeyboardButton(
     'Вернуться к списку товаров ⬅️',
     callback_data=SHOW_ALL_TRACK
 )
+MENU_BUTTON = InlineKeyboardButton(
+    'Меню 📦', callback_data=MENU
+)
+AUTHORIZATION_BUTTON = InlineKeyboardButton(
+    '🔐 Авторизация', callback_data='authorization'
+)
 
 # handlers.base buttons
 MENU_BUTTONS = [
@@ -55,9 +61,7 @@ MENU_BUTTONS = [
 ]
 REGISTER_USER_BUTTONS = [
     [
-        InlineKeyboardButton(
-            'Меню 📦', callback_data=MENU
-        ),
+        MENU_BUTTON,
         InlineKeyboardButton(
             'Настройки аккаунта ⚙️',
             callback_data=ACCOUNT_SETTINGS
@@ -65,11 +69,7 @@ REGISTER_USER_BUTTONS = [
     ]
 ]
 NOT_REGISTER_USER_BUTTONS = [
-    [
-        InlineKeyboardButton(
-            'Авторизация 📦', callback_data=START_AUTHORIZATION
-        )
-    ]
+    [AUTHORIZATION_BUTTON]
 ]
 START_REGISTRATION_BUTTONS = [
     [
@@ -109,19 +109,13 @@ SHOW_ALL_BUTTONS = [
         )
     ],
     [
-        InlineKeyboardButton(
-            'Меню 🛍️',
-            callback_data=MENU
-        )
+        MENU_BUTTON
     ]
 ]
 GO_BACK_NEW_TARGET_PRICE_BUTTONS = [
     [
         GO_TO_TRACK_LIST_BUTTON,
-        InlineKeyboardButton(
-            'В меню 📦',
-            callback_data=MENU
-        )
+        MENU_BUTTON
     ]
 ]
 SELECT_MARKETPLACE_BUTTONS = [
@@ -164,4 +158,21 @@ CONFIRM_TRACK_DELETE_BUTTONS = [
 ]
 FINISH_DELETE_TRACK_BUTTONS = [
     [GO_TO_TRACK_LIST_BUTTON]
+]
+
+# handlers.user
+ACCOUNT_SETTINGS_BUTTONS = [
+    [MENU_BUTTON]
+]
+LOAD_ACCOUNT_DATA = [
+    [MENU_BUTTON]
+]
+CHECK_ACCOUNT_DATA_BUTTONS = [
+    [
+        MENU_BUTTON,
+        InlineKeyboardButton('Назад ⬅️', callback_data=ACCOUNT_SETTINGS)
+    ]
+]
+FINISH_REGISTRATION_BUTTONS = [
+    [AUTHORIZATION_BUTTON]
 ]

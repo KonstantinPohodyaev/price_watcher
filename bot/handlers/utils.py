@@ -6,7 +6,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from cryptography.fernet import Fernet
 from telegram import (CallbackQuery, InlineKeyboardButton,
-                      InlineKeyboardMarkup, Update)
+                      InlineKeyboardMarkup, Update, InputFile)
 from telegram.ext import ContextTypes, ConversationHandler
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
@@ -173,6 +173,25 @@ async def send_tracked_message(
     """Функция для одновременной отправки и отслеживания сообщения."""
     message = await interaction.message.reply_text(
         text=text,
+        reply_markup=reply_markup,
+        parse_mode=parse_mode
+    )
+    add_message_to_delete_list(message, context)
+
+
+async def send_tracked_photo(
+    interaction: Update | CallbackQuery,
+    context: ContextTypes.DEFAULT_TYPE,
+    caption: str,
+    photo: InputFile,
+    reply_markup: InlineKeyboardMarkup = None,
+    parse_mode: str = PARSE_MODE
+) -> None:
+    """Функция для одновременной отправки и отслеживания фото."""
+    message = await context.bot.send_photo(
+        chat_id=interaction.effective_chat.id,
+        photo=photo,
+        caption=caption,
         reply_markup=reply_markup,
         parse_mode=parse_mode
     )
