@@ -1,17 +1,16 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          CommandHandler, ContextTypes,
-                          filters)
+                          CommandHandler, ContextTypes, filters)
 
 from bot.handlers.buttons import (MENU_BUTTONS, NOT_REGISTER_USER_BUTTONS,
                                   REGISTER_USER_BUTTONS,
+                                  START_NOTIFICATIONS_BUTTONS,
                                   START_REGISTRATION_BUTTONS)
 from bot.handlers.callback_data import BOT_INFO, MENU, START_NOTIFICATIONS
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (catch_error,
-                                check_authorization, get_interaction,
-                                send_tracked_message)
+from bot.handlers.utils import (catch_error, check_authorization,
+                                get_interaction, send_tracked_message)
 from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,
                            periodic_check)
 
@@ -22,41 +21,33 @@ START_ERROR = 'К сожалению возникла ошибка при зап
 START_NOTIFICARIONS_ERROR = 'Ошибка при активации уведомлений! ❌'
 
 INFO_MESSAGE = """
-<b>📊 Проект: <u>Price Watcher</u></b>  
-━━━━━━━━━━━━━━━━━━━━━━━━━━  
-🔍 Следи за ценами на товары с популярных маркетплейсов  
-📉 Подключи уведомления и узнаешь, когда цена на товар упадет до желаемой  
-🔐 Простая авторизация и управление аккаунтом  
-━━━━━━━━━━━━━━━━━━━━━━━━━━  
-📌 Команды:  
-/start — запустить бота  
-/auth — авторизация  
+<b>📊 Проект: <u>Price Watcher</u></b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Следи за ценами на товары с популярных маркетплейсов
+📉 Подключи уведомления и узнаешь, когда цена на товар упадет до желаемой
+🔐 Простая авторизация и управление аккаунтом
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 Команды:
+/start — запустить бота
+/auth — авторизация
 /account_settings — настройки аккаунта
 /menu — главное меню
 """
 
 START_DECORATING_MESSAGE = 'Загрузка интерфейса...'
 START_MESSAGE = """
-<b>👋 Привет, <code>{name}</code>!</b>  
-Добро пожаловать в <b>Price Watcher</b>  
-━━━━━━━━━━━━━━━━━━━━━━━━━━  
-Я помогу тебе следить за ценами и вовремя сообщать,  
-когда товар подешевеет 📉  
-━━━━━━━━━━━━━━━━━━━━━━━━━━  
+<b>👋 Привет, <code>{name}</code>!</b>
+Добро пожаловать в <b>Price Watcher</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+Я помогу тебе следить за ценами и вовремя сообщать,
+когда товар подешевеет 📉
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 ℹ️ /info — информация о боте
 """
 UNREGISTERED_MESSAGE = 'Вы не зарегестрированы! 🚨'
 NOTIFICATION_ON_MESSAGE = '✅ Уведомления о снижении цены включены.'
 MENU_MESSAGE = 'Выберите интересующий вас пункт'
 
-START_NOTIFICATIONS_BUTTONS = [
-    [
-        InlineKeyboardButton(
-            'Перейти в меню 📋',
-            callback_data=MENU
-        )
-    ]
-]
 
 @catch_error(START_ERROR)
 @clear_messages

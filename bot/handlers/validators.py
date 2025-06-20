@@ -8,7 +8,6 @@ from telegram.ext import ContextTypes
 from bot.endpoints import GET_USER_BY_EMAIL
 from bot.handlers.utils import send_tracked_message
 
-
 VALIDATE_FULL_NAME_PATTERN = r'^[A-ZА-ЯЁa-zа-яё]+ [A-ZА-ЯЁa-zа-яё]+$'
 FULL_NAME_PATTERN_ERROR = (
     'Неверный формат ввода имени и фамилии 🚫\n'
