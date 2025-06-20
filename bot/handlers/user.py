@@ -25,7 +25,8 @@ from bot.handlers.validators import (validate_email, validate_empty_photo,
                                      PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
 from bot.handlers.buttons import (
     ACCOUNT_SETTINGS_BUTTONS, LOAD_ACCOUNT_DATA, CHECK_ACCOUNT_DATA_BUTTONS,
-    FINISH_REGISTRATION_BUTTONS, FINISH_AUTHORIZATION_BUTTONS
+    FINISH_REGISTRATION_BUTTONS, FINISH_AUTHORIZATION_BUTTONS,
+    EDIT_BUTTONS, FINISH_EDIT_BUTTONS
 )
 
 # Состояния для ConversationHandler
@@ -124,6 +125,7 @@ NO_ACCOUNT_LOADED = """
 Попробуйте обновить командой: <code>/load_data</code>
 """
 
+# Для авторизации
 ASK_PASSWORD_AUTH = """
 🔑 Введите <b>ваш пароль</b> для авторизации:
 """
@@ -138,6 +140,7 @@ AUTH_SUCCESS = """
 Выберите действие ниже 👇
 """
 
+# Для удаления аккаунта
 ASK_PASSWORD_FOR_DELETE = """
 🔐 <b>Введите пароль</b> от вашего аккаунта для подтверждения удаления:
 """
@@ -150,6 +153,64 @@ DELETE_SUCCESS = """
 🗑️ <b>Ваш аккаунт был успешно удалён!</b>
 
 Вы всегда можете зарегистрироваться снова — /start
+"""
+
+# Для редактирования профиля
+START_EDIT_PASSWORD_PROMPT = """
+🔐 Введите пароль от вашего аккаунта:
+"""
+
+CHOOSE_EDIT_FIELD_PROMPT = """
+🛠️ Выберите поле для редактирования ⏳  
+После редактирования нажмите применить!
+"""
+
+EDIT_FULL_NAME_PROMPT = """
+✍️ Введите ваши фамилию и имя:
+"""
+
+EDIT_EMAIL_PROMPT = """
+📧 Введите обновленную почту:
+"""
+
+EDIT_PASSWORD_PROMPT = """
+🔑 Введите новый пароль:
+"""
+
+EDIT_AVATAR_PROMPT = """
+📸 Загрузите ваше фото для профиля:
+"""
+
+FULL_NAME_SAVED_MESSAGE = """
+✅ Новое имя и фамилия сохранены!
+"""
+
+EMAIL_SAVED_MESSAGE = """
+✅ Новая почта сохранена!
+"""
+
+PASSWORD_SAVED_MESSAGE = """
+✅ Новый пароль сохранен!
+"""
+
+AVATAR_SAVED_MESSAGE = """
+✅ Новая аватарка успешно загружена!
+"""
+
+TOKEN_EXPIRED_MESSAGE = """
+⚠️ Срок действия токена истек(  
+🔄 Повторите авторизацию! /auth
+"""
+
+AVATAR_UPLOAD_ERROR_MESSAGE = """
+❌ Ошибка при загрузке фото: {error}  
+🔁 Повторите отправку!
+"""
+
+DATA_UPDATED_MESSAGE = """
+✅ Данные обновлены
+
+{new_user_data}
 """
 
 NOT_AUTHORIZED_DELETE = """
@@ -178,29 +239,6 @@ SAVE_PASSWORD_ERROR = 'Ошибка при сохранении нового п�
 EDIT_FINISH_ERROR = 'Ошибка при сохранении изменений аккаунта 🚫'
 SAVE_AVATAR_ERROR = 'Ошибка при сохранении аватарки 🚫'
 
-EDIT_BUTTONS = [
-    [
-        InlineKeyboardButton(
-            'Добавить фото', callback_data=EDIT_ADD_AVATAR
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
-        ),
-        InlineKeyboardButton(
-            'Почта', callback_data=EDIT_EMAIL_CALLBACK
-        ),
-        InlineKeyboardButton(
-            'Пароль', callback_data=EDIT_PASSWORD
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            'Применить ✅', callback_data='finish_edit'
-        )
-    ]
-]
 
 @clear_messages
 @load_data_for_register_user
@@ -478,11 +516,12 @@ async def get_password_for_edit_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     context.user_data['edit_account'] = dict()
-    message = await update.message.reply_text(
-        'Введите пароль от вашего аккаунта:'
+    await send_tracked_message(
+        update,
+        context,
+        text=START_EDIT_PASSWORD_PROMPT
     )
-    add_message_to_delete_list(message, context)
-    return 'choose_edit_field'
+    return EDIT_CHOOSE_EDIT_FIELD
 
 
 @catch_error(SELECT_EDIT_FIELD_ERROR, conv=True)
@@ -493,27 +532,22 @@ async def choose_edit_field(
 ):
     entered_password = update.message.text
     await update.message.delete()
-    if update.callback_query:
-        query = update.callback_query
-        await query.answer()
-        config = query
-    else:
-        config = update
+    interaction = await get_interaction(update)
     if not await check_password(
-        config,
+        interaction,
         context,
         entered_password,
         context.user_data['account']['hashed_password']
     ):
-        return 'choose_edit_field'
-    if not await check_authorization(config, context):
+        return EDIT_CHOOSE_EDIT_FIELD
+    if not await check_authorization(interaction, context):
         return ConversationHandler.END
-    message = await update.message.reply_text(
-        'Выберите поле для редактирования ⏳\n'
-        'После редактирования нажмите применить!',
+    await send_tracked_message(
+        interaction,
+        context,
+        text=CHOOSE_EDIT_FIELD_PROMPT,
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 
@@ -526,28 +560,32 @@ async def start_edit_field(
     await query.answer()
     field = query.data
     if field == EDIT_FULL_NAME_CALLBACK:
-        message = await query.message.reply_text(
-            'Введите ваши фамилию и имя:'
+        await send_tracked_message(
+            query,
+            context,
+            text=EDIT_FULL_NAME_PROMPT
         )
-        add_message_to_delete_list(message, context)
         return EDIT_SAVE_EDIT_FULL_NAME
     elif field == EDIT_EMAIL_CALLBACK:
-        message = await query.message.reply_text(
-            'Введите обновленную почту:'
+        await send_tracked_message(
+            query,
+            context,
+            text=EDIT_EMAIL_PROMPT
         )
-        add_message_to_delete_list(message, context)
         return EDIT_SAVE_EDIT_EMAIL
     elif field == EDIT_PASSWORD:
-        message = await query.message.reply_text(
-            'Введите новый пароль:'
+        await send_tracked_message(
+            query,
+            context,
+            text=EDIT_PASSWORD_PROMPT
         )
-        add_message_to_delete_list(message, context)
         return EDIT_SAVE_EDIT_PASSWORD
     elif field == EDIT_ADD_AVATAR:
-        message = await query.message.reply_text(
-            'Загрузите ваше фото для профиля:'
+        await send_tracked_message(
+            query,
+            context,
+            text=EDIT_AVATAR_PROMPT
         )
-        add_message_to_delete_list(message, context)
         return EDIT_SAVE_AVATAR
 
 
@@ -564,15 +602,17 @@ async def save_edit_full_name(
     name, surname = full_name.split()
     context.user_data['edit_account']['name'] = name
     context.user_data['edit_account']['surname'] = surname
-    message = await update.message.reply_text(
-        'Новое имя и фамилия сохранены!\n'
+    await send_tracked_message(
+        update,
+        context,
+        text=FULL_NAME_SAVED_MESSAGE,
     )
-    add_message_to_delete_list(message, context)
-    message = await update.message.reply_text(
-        'Выберите поле для редактирования ⏳',
+    await send_tracked_message(
+        update,
+        context,
+        text=CHOOSE_EDIT_FIELD_PROMPT,
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 
@@ -587,15 +627,17 @@ async def save_edit_email(
     if not await validate_email(update, context, email):
         return EDIT_SAVE_EDIT_EMAIL
     context.user_data['edit_account']['email'] = email
-    message = await update.message.reply_text(
-        'Новая почта сохранена!\n'
+    await send_tracked_message(
+        update,
+        context,
+        text=EMAIL_SAVED_MESSAGE
     )
-    add_message_to_delete_list(message, context)
-    message = await update.message.reply_text(
-        'Выберите поле для редактирования ⏳',
+    await send_tracked_message(
+        update,
+        context,
+        text=CHOOSE_EDIT_FIELD_PROMPT,
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 
@@ -610,15 +652,17 @@ async def save_edit_password(
     if not await validate_password(update, context, password):
         return EDIT_SAVE_EDIT_PASSWORD
     context.user_data['edit_account']['password'] = password
-    message = await update.message.reply_text(
-        'Новый пароль сохранен!\n'
+    await send_tracked_message(
+        update,
+        context,
+        text=PASSWORD_SAVED_MESSAGE
     )
-    add_message_to_delete_list(message, context)
-    message = await update.message.reply_text(
-        'Выберите поле для редактирования ⏳',
+    await send_tracked_message(
+        update,
+        context,
+        text=CHOOSE_EDIT_FIELD_PROMPT,
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 
@@ -649,31 +693,35 @@ async def save_avatar(
             headers=get_headers(context)
         ) as response:
             if response.status == HTTPStatus.UNAUTHORIZED:
-                message = await update.message.reply_text(
-                    'Срок действия токена истек(\n'
-                    'Повторите авторизацию! /auth'
+                await send_tracked_message(
+                    update,
+                    context,
+                    text=TOKEN_EXPIRED_MESSAGE
                 )
-                add_message_to_delete_list(message, context)
                 return ConversationHandler.END
             if response.status != HTTPStatus.OK:
                 error_data = await response.json()
-                message = await update.message.reply_text(
-                    f'Ошибка при загрузке фото: {error_data} '
-                    'Повторите отправку!'
+                await send_tracked_message(
+                    update,
+                    context,
+                    text=AVATAR_UPLOAD_ERROR_MESSAGE.format(
+                        error=error_data
+                    )
                 )
-                add_message_to_delete_list(message, context)
                 return EDIT_ADD_AVATAR
             photo = await response.json()
     context.user_data['edit_account']['photo_id'] = photo['id']
-    message = await update.message.reply_text(
-        'Новая аватарка успешно загружена!\n'
+    await send_tracked_message(
+        update,
+        context,
+        text=AVATAR_SAVED_MESSAGE
     )
-    add_message_to_delete_list(message, context)
-    message = await update.message.reply_text(
-        'Выберите поле для редактирования ⏳',
+    await send_tracked_message(
+        update,
+        context,
+        text=CHOOSE_EDIT_FIELD_PROMPT,
         reply_markup=InlineKeyboardMarkup(EDIT_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
     return EDIT_START_EDIT_FIELD
 
 @catch_error(EDIT_FINISH_ERROR)
@@ -692,40 +740,28 @@ async def finish_edit(
             json=context.user_data['edit_account']
         ) as response:
             new_user_data = await response.json()
-            buttons=[
-                [
-                    InlineKeyboardButton(
-                        'Назад', callback_data=ACCOUNT_SETTINGS
+            await send_tracked_message(
+                query,
+                context,
+                text=DATA_UPDATED_MESSAGE.format(
+                        new_user_data=USER_CARD.format(
+                        name=new_user_data['name'],
+                        surname=new_user_data['surname'],
+                        telegram_id=new_user_data['telegram_id'],
+                        email=new_user_data['email'],
+                        jwt_token=new_user_data['jwt_token']['access_token']
+                    ),
+                    reply_markup=InlineKeyboardMarkup(
+                        FINISH_EDIT_BUTTONS
                     )
-                ]
-            ]
-            message = await query.message.reply_text(
-                text='Данные обновлены ✅\n' +
-                USER_CARD.format(
-                    name=new_user_data['name'],
-                    surname=new_user_data['surname'],
-                    telegram_id=new_user_data['telegram_id'],
-                    email=new_user_data['email'],
-                    jwt_token=new_user_data['jwt_token']['access_token']
-                ),
-                reply_markup=InlineKeyboardMarkup(
-                    buttons
-                ),
-                parse_mode=PARSE_MODE
+                )
             )
-            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 
 def handlers_installer(
     application: ApplicationBuilder
 ) -> None:
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT & filters.Regex('^Ваш аккаунт 📱$'),
-            account_settings
-        )
-    )
     application.add_handler(
         CommandHandler('account_settings', account_settings)
     )
