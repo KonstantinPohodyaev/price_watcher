@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from src.models.user import User
 
 
-
 class JWTToken(Base):
     """Класс для хранения зашифрованных JWT-токенов."""
     id: Mapped[int_pk]

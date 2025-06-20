@@ -6,7 +6,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from cryptography.fernet import Fernet
 from telegram import (CallbackQuery, InlineKeyboardButton,
-                      InlineKeyboardMarkup, Update, InputFile)
+                      InlineKeyboardMarkup, InputFile, Update)
 from telegram.ext import ContextTypes, ConversationHandler
 
 from bot.endpoints import GET_USER_BY_TELEGRAM_ID
@@ -21,6 +21,7 @@ fernet = Fernet(
         'A8zOVVp4FMb93RD03n0O25FwAYmTxmTQhF3kPBnLJ6E='
     )
 )
+
 
 # Вспомогательные утилиты.
 def catch_error(error_message: str, conv=False):
@@ -97,7 +98,7 @@ async def load_user_data(
 ):
     """Загрузка пользовательский данных (для тестирования)."""
     async with session.post(
-            GET_USER_BY_TELEGRAM_ID, json=dict(
+        GET_USER_BY_TELEGRAM_ID, json=dict(
             telegram_id=update.message.from_user.id
         )
     ) as response:

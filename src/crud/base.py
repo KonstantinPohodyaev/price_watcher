@@ -3,7 +3,6 @@
 from typing import Generic, Optional, Type, TypeVar
 
 from fastapi import HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError

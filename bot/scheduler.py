@@ -2,23 +2,18 @@ from decimal import Decimal
 from http import HTTPStatus
 
 import aiohttp
-from telegram import Bot
 from telegram.ext import ContextTypes
 
 from bot.endpoints import (ADD_ENTRY_ABOUT_TRACK,
                            REFRESH_DATA_FOR_EXISTEN_TRACK, UPDATE_TRACK_BY_ID,
                            USERS_TRACKS)
-from bot.handlers.utils import decode_jwt_token, get_headers
 
-SUCCESS_PRICE = (
-    '🎉 Цена на товар {article} опустилась до нужной!'
-)
+
 PERIODIC_CHECK_INTERVAL = 3
 PERIODIC_CHECK_FIRST = 1
 
-TOKEN_LIFETIME_ERROR = (
-    '⛔ Срок действия токена истёк. Авторизуйтесь снова.'
-)
+SUCCESS_PRICE = '🎉 Цена на товар {article} опустилась до нужной!'
+TOKEN_LIFETIME_ERROR = '⛔ Срок действия токена истёк. Авторизуйтесь снова.'
 GETTING_DATA_ERROR = (
     '⛔ Ошибка получения данных: код ошибки {status_code}'
 )

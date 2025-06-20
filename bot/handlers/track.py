@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           ContextTypes, ConversationHandler, MessageHandler)
 
@@ -16,13 +16,12 @@ from bot.handlers.buttons import (CHECK_HISTORY_BUTTONS,
                                   get_create_track_buttons, get_track_keyboard)
 from bot.handlers.callback_data import (ADD_TRACK, CANCEL_DELETE,
                                         CHECK_HISTORY, CONFIRM_DELETE,
-                                        DELETE_TRACK, MENU, OZON,
+                                        DELETE_TRACK, OZON,
                                         SHOW_ALL_TRACK, WILDBERRIES)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (add_message_to_delete_list, catch_error,
-                                check_authorization, get_headers,
+from bot.handlers.utils import (catch_error, check_authorization, get_headers,
                                 get_interaction, send_tracked_message)
 from bot.handlers.validators import validate_price
 
@@ -65,14 +64,14 @@ OUTDATED_AUTHORIZATION_ERROR = """
 SHORT_TRACK_CARD = """
 <b>🛒 {title}</b>  <code>{article}</code>
 _____________________________________
-💸 <b>Текущая цена:</b> <code>{current_price}₽</code>  
+💸 <b>Текущая цена:</b> <code>{current_price}₽</code>
 🎯 <b>Желаемая цена:</b> <code>{target_price}₽</code>
 🏷️ <b>Статус:</b> {status}
 _____________________________________
 <b>ID:</b> <code>{id}</code>
 """
 PRICE_HISTORY_CARD = """
-<b>💰 Цена:</b> {price}₽  
+<b>💰 Цена:</b> {price}₽
 <b>📅 Дата:</b> {date} {time}
 """
 TRACKS_RESULT_MESSAGE = """
@@ -118,8 +117,6 @@ _________________________
 """
 CANCEL_DELETE_MESSAGE = 'Удаление товара с id = {track_id} отменено!'
 SUCCESS_DELETE_MESSAGE = 'Товар с id = {track_id} успешно удален! ✅'
-
-
 
 
 @catch_error(SHOW_ALL_ERROR)
@@ -230,7 +227,9 @@ async def target_price_refresh(
                 text=SUCCESS_SAVE_NEW_TARGET_PRICE_MESSAGE.format(
                     new_target_price=new_target_price
                 ),
-                reply_markup=InlineKeyboardMarkup(GO_BACK_NEW_TARGET_PRICE_BUTTONS)
+                reply_markup=InlineKeyboardMarkup(
+                    GO_BACK_NEW_TARGET_PRICE_BUTTONS
+                )
             )
             return ConversationHandler.END
 
@@ -257,10 +256,11 @@ async def add_article(
     query = update.callback_query
     await query.answer()
     context.user_data['new_track']['marketplace'] = query.data.split('_')[-1]
-    message = await query.message.reply_text(
-        SELECT_ARTICLE_MESSAGE
+    await send_tracked_message(
+        query,
+        context,
+        text=SELECT_ARTICLE_MESSAGE
     )
-    add_message_to_delete_list(message, context)
     return ADD_TRACK_ADD_TARGET_PRICE
 
 
@@ -528,4 +528,3 @@ def handlers_installer(
     application.add_handler(
         delete_track_conversation_handler
     )
-  

@@ -28,4 +28,3 @@ class JWTTokenCreate(JWTBase):
 class JWTTokenUpdate(BaseModel):
     access_token: Optional[bytes | str] = None
     token_type: Optional[TokenType] = None
-

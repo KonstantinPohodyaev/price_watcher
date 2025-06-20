@@ -36,6 +36,7 @@ TRACK_WITH_ARTICLE_AND_MARKETPLACE_NOT_EXISTS_ERROR = (
     'Товара с артикулом {article} и маркетплейсом {marketplace} не существует. '
 )
 
+
 async def check_object_exists_by_id(
     object_id: int,
     object_crud,
@@ -157,7 +158,7 @@ def validate_marketplace(
     """Валидатор поля marketplace."""
     try:
         Marketplace(marketplace)
-    except ValueError as error:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=VALIDATE_MARKET_PLACE_ERROR.format(

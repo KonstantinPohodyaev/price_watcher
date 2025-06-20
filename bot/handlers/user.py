@@ -1,33 +1,31 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, InputFile,
-                      ReplyKeyboardRemove, Update)
+from telegram import InlineKeyboardMarkup, InputFile, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
-                          MessageHandler, filters)
+                          MessageHandler)
 
 from bot.endpoints import (ADD_NEW_AVATAR, DELETE_USER_BY_ID, GET_JWT_TOKEN,
                            REGISTER_USER, USERS_REFRESH_ME)
+from bot.handlers.buttons import (ACCOUNT_SETTINGS_BUTTONS,
+                                  CHECK_ACCOUNT_DATA_BUTTONS, EDIT_BUTTONS,
+                                  FINISH_AUTHORIZATION_BUTTONS,
+                                  FINISH_EDIT_BUTTONS,
+                                  FINISH_REGISTRATION_BUTTONS,
+                                  LOAD_ACCOUNT_DATA)
 from bot.handlers.callback_data import (ACCOUNT_SETTINGS, EDIT_ADD_AVATAR,
                                         EDIT_EMAIL_CALLBACK,
-                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
-                                        MENU)
-from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
+                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD)
+from bot.handlers.constants import MESSAGE_HANDLERS, PHOTO_HANDLERS
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (add_message_to_delete_list, catch_error,
-                                check_authorization, check_password,
-                                get_headers, get_interaction,
+from bot.handlers.utils import (catch_error, check_authorization,
+                                check_password, get_headers, get_interaction,
                                 send_tracked_message, send_tracked_photo)
-from bot.handlers.validators import (validate_email, validate_empty_photo,
-                                     validate_full_name, validate_password,
-                                     PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
-from bot.handlers.buttons import (
-    ACCOUNT_SETTINGS_BUTTONS, LOAD_ACCOUNT_DATA, CHECK_ACCOUNT_DATA_BUTTONS,
-    FINISH_REGISTRATION_BUTTONS, FINISH_AUTHORIZATION_BUTTONS,
-    EDIT_BUTTONS, FINISH_EDIT_BUTTONS
-)
+from bot.handlers.validators import (PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH,
+                                     validate_email, validate_empty_photo,
+                                     validate_full_name, validate_password)
 
 # Состояния для ConversationHandler
 
@@ -53,9 +51,9 @@ EDIT_FINISH_EDIT = 'finish_edit'
 ACCOUNT_SETTINGS_MESSAGE = """
 <b>⚙️ Настройки аккаунта</b>
 ━━━━━━━━━━━━━━━━━━
-🔄 <b>/load_data</b> – обновить данные аккаунта  
-✏️ <b>/edit_account</b> – редактировать аккаунт  
-🗑️ <b>/delete_account</b> – удалить аккаунт  
+🔄 <b>/load_data</b> – обновить данные аккаунта
+✏️ <b>/edit_account</b> – редактировать аккаунт
+🗑️ <b>/delete_account</b> – удалить аккаунт
 👤 <b>/account_data</b> – просмотреть данные аккаунта
 """
 
@@ -72,7 +70,7 @@ ACCOUNT_DATA_MESSAGE = """
 <b>Почта подтверждена:</b> {is_verified}
 <b>Суперпользователь:</b> {is_superuser}
 
-<b>JWT-токен:</b>  
+<b>JWT-токен:</b>
 <code>{jwt_token}</code>
 """
 
@@ -83,39 +81,39 @@ ACCOUNT_DATA_NAVIGATION_MESSAGE = """
 """
 
 USER_CARD = """
-👤 <b>Полное имя:</b> {name} {surname}  
-📧 <b>Почта:</b> <code>{email}</code>  
+👤 <b>Полное имя:</b> {name} {surname}
+📧 <b>Почта:</b> <code>{email}</code>
 🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>
 🔐 <b>JWT:</b> <code>{jwt_token}</code>
 """
 
 LOAD_ACCOUNT_DATA_MESSAGE = 'Данные аккаунта успешно обновлены! ✅'
 
-ASK_FULL_NAME = (
-    '👤 Пожалуйста, введите <b>ваше имя и фамилию</b> через пробел:\n\n'
-    'Пример: <code>Иван Иванов</code>'
-)
+ASK_FULL_NAME = """
+👤 Пожалуйста, введите <b>ваше имя и фамилию</b> через пробел:
+Пример: <code>Иван Иванов</code>
+"""
 
-ASK_EMAIL = (
-    '📧 Введите <b>вашу электронную почту</b>:\n\n'
-    'Пример: <code>example@mail.ru</code>'
-)
+ASK_EMAIL = """
+📧 Введите <b>вашу электронную почту</b>:
+Пример: <code>example@mail.ru</code>
+"""
 
-ASK_PASSWORD = (
-    '🔒 Придумайте <b>безопасный пароль</b>:\n\n'
-    '<i>От {min} до {max} символов, состоящий из цифр</i>'
-)
+ASK_PASSWORD = """
+🔒 Придумайте <b>безопасный пароль</b>:
+<i>От {min} до {max} символов, состоящий из цифр</i>
+"""
 
-REGISTRATION_SUCCESS = (
-    '✅ <b>Регистрация завершена!</b>\n\n'
-    'Давайте авторизуемся, чтобы начать пользоваться ботом 👇'
-)
+REGISTRATION_SUCCESS = """
+✅ <b>Регистрация завершена!</b>
+Давайте авторизуемся, чтобы начать пользоваться ботом 👇
+"""
 
-REGISTRATION_GREETING_TEMPLATE = (
-    '👋 Добро пожаловать, <b>{name}</b>!\n\n'
-    '🆔 Ваш уникальный ID: <code>{user_id}</code>\n\n'
-    'Для продолжения нажмите кнопку ниже ⬇️'
-)
+REGISTRATION_GREETING_TEMPLATE = """
+👋 Добро пожаловать, <b>{name}</b>!
+🆔 Ваш уникальный ID: <code>{user_id}</code>
+Для продолжения нажмите кнопку ниже ⬇️
+"""
 
 ENTER_PASSWORD_MESSAGE = 'Введите пароль от вашего аккаунта:'
 
@@ -161,7 +159,7 @@ START_EDIT_PASSWORD_PROMPT = """
 """
 
 CHOOSE_EDIT_FIELD_PROMPT = """
-🛠️ Выберите поле для редактирования ⏳  
+🛠️ Выберите поле для редактирования ⏳
 После редактирования нажмите применить!
 """
 
@@ -198,12 +196,12 @@ AVATAR_SAVED_MESSAGE = """
 """
 
 TOKEN_EXPIRED_MESSAGE = """
-⚠️ Срок действия токена истек(  
+⚠️ Срок действия токена истек(
 🔄 Повторите авторизацию! /auth
 """
 
 AVATAR_UPLOAD_ERROR_MESSAGE = """
-❌ Ошибка при загрузке фото: {error}  
+❌ Ошибка при загрузке фото: {error}
 🔁 Повторите отправку!
 """
 
@@ -293,7 +291,9 @@ async def check_account_data(
                     context,
                     caption=user_data,
                     photo=InputFile(image_file),
-                    reply_markup=InlineKeyboardMarkup(CHECK_ACCOUNT_DATA_BUTTONS)
+                    reply_markup=InlineKeyboardMarkup(
+                        CHECK_ACCOUNT_DATA_BUTTONS
+                    )
                 )
         except Exception as error:
             print(f'Не удалось отправить аватар: {str(error)}')
@@ -678,7 +678,6 @@ async def save_avatar(
     file_id = photo.file_id
     tg_file = await context.bot.get_file(file_id)
     file_data = await tg_file.download_as_bytearray()
-    
     async with aiohttp.ClientSession() as session:
         form = aiohttp.FormData()
         form.add_field(
@@ -724,6 +723,7 @@ async def save_avatar(
     )
     return EDIT_START_EDIT_FIELD
 
+
 @catch_error(EDIT_FINISH_ERROR)
 @clear_messages
 @load_data_for_register_user
@@ -744,7 +744,7 @@ async def finish_edit(
                 query,
                 context,
                 text=DATA_UPDATED_MESSAGE.format(
-                        new_user_data=USER_CARD.format(
+                    new_user_data=USER_CARD.format(
                         name=new_user_data['name'],
                         surname=new_user_data['surname'],
                         telegram_id=new_user_data['telegram_id'],
@@ -811,7 +811,9 @@ def handlers_installer(
                 MessageHandler(MESSAGE_HANDLERS, authorization)
             ],
             AUTH_GET_PASSWORD: [
-                MessageHandler(MESSAGE_HANDLERS, get_password_for_authorization)
+                MessageHandler(
+                    MESSAGE_HANDLERS, get_password_for_authorization
+                )
             ]
         },
         fallbacks=[

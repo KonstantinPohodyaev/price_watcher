@@ -42,7 +42,7 @@ def get_wildberries_product_data(
         ))
         track_schema.title = product_data['data']['products'][0]['name']
         return track_schema
-    except Exception as error:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=GET_WILDBERRIES_PRODUCT_DATA_ERROR.format(

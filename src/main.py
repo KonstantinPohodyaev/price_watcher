@@ -10,10 +10,8 @@ from src.api.v1.routers import main_router
 from src.core.config import STATIC_DIR, UPLOAD_DIR, settings
 from src.core.init_db import create_first_superuser
 
-load_dotenv()
 
-UPLOAD_DIR = 'media'
-STATIC_DIR = '/media'
+load_dotenv()
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 

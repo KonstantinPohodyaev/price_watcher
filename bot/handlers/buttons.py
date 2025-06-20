@@ -1,21 +1,15 @@
-from telegram import InlineKeyboardButton, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton
 
 from bot.handlers.callback_data import (ACCOUNT_SETTINGS, ADD_TRACK, BOT_INFO,
                                         CANCEL_DELETE, CHECK_HISTORY,
-                                        CONFIRM_DELETE, MENU, OZON,
-                                        SHOW_ALL_TRACK, START_AUTHORIZATION,
+                                        CONFIRM_DELETE, EDIT_ADD_AVATAR,
+                                        EDIT_EMAIL_CALLBACK,
+                                        EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
+                                        FINISH_EDIT, MENU,
+                                        SHOW_ALL_TRACK,
                                         START_NOTIFICATIONS,
-                                        START_REGISTRATION, WILDBERRIES,
-                                        EDIT_ADD_AVATAR, EDIT_FULL_NAME_CALLBACK,
-                                        EDIT_EMAIL_CALLBACK, EDIT_PASSWORD,
-                                        FINISH_EDIT)
+                                        START_REGISTRATION, WILDBERRIES)
 
-MAIN_REPLY_BUTTONS = ['Меню 🔥', 'Авторизация 🔐', 'Ваш аккаунт 📱']
-
-REPLY_KEYBOARD = ReplyKeyboardMarkup(
-    [MAIN_REPLY_BUTTONS],
-    resize_keyboard=True
-)
 
 # buttons
 GO_TO_TRACK_LIST_BUTTON = InlineKeyboardButton(
@@ -80,6 +74,8 @@ START_REGISTRATION_BUTTONS = [
         )
     ]
 ]
+
+
 # handlers.track
 def get_track_keyboard(track_id: int) -> list[InlineKeyboardButton]:
     """Собирает кнопки для экземпляра Track."""
@@ -101,6 +97,7 @@ def get_track_keyboard(track_id: int) -> list[InlineKeyboardButton]:
             )
         ]
     ]
+
 
 SHOW_ALL_BUTTONS = [
     [
@@ -132,6 +129,7 @@ SELECT_MARKETPLACE_BUTTONS = [
     ]
 ]
 
+
 def get_create_track_buttons(
     track_id: int
 ):
@@ -141,6 +139,7 @@ def get_create_track_buttons(
             GO_TO_TRACK_LIST_BUTTON
         ]]
     )
+
 
 CHECK_HISTORY_BUTTONS = [
     [GO_TO_TRACK_LIST_BUTTON]
@@ -159,6 +158,9 @@ CONFIRM_TRACK_DELETE_BUTTONS = [
 ]
 FINISH_DELETE_TRACK_BUTTONS = [
     [GO_TO_TRACK_LIST_BUTTON]
+]
+START_NOTIFICATIONS_BUTTONS = [
+    [MENU_BUTTON]
 ]
 
 # handlers.user

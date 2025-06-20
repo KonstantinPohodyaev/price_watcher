@@ -14,7 +14,7 @@ from src.api.v1.validators import (check_unique_jwt_token_exists_by_user_id,
                                    check_user_exists_by_id,
                                    check_yourself_or_superuser)
 from src.core.user import (AUTH_BACKEND_NAME, UserManager, auth_backend,
-                           current_superuser, current_user, fastapi_users,
+                           current_user, fastapi_users,
                            get_user_db, get_user_manager)
 from src.crud.jwt_auth import jwt_token_crud
 from src.crud.user import user_crud
@@ -23,6 +23,7 @@ from src.models.user import User
 from src.schemas.jwt_auth import JWTTokenCreate, JWTTokenUpdate
 from src.schemas.user import (CheckEmail, CheckTGID, UserCreate, UserRead,
                               UserUpdate)
+
 
 router = APIRouter()
 service_router = APIRouter()
@@ -44,17 +45,17 @@ auth_router.routes = [
 
 login_responses: OpenAPIResponseType = {
     status.HTTP_400_BAD_REQUEST: {
-        "model": ErrorModel,
-        "content": {
-            "application/json": {
-                "examples": {
+        'model': ErrorModel,
+        'content': {
+            'application/json': {
+                'examples': {
                     ErrorCode.LOGIN_BAD_CREDENTIALS: {
-                        "summary": "Bad credentials or the user is inactive.",
-                        "value": {"detail": ErrorCode.LOGIN_BAD_CREDENTIALS},
+                        'summary': 'Bad credentials or the user is inactive.',
+                        'value': {'detail': ErrorCode.LOGIN_BAD_CREDENTIALS},
                     },
                     ErrorCode.LOGIN_USER_NOT_VERIFIED: {
-                        "summary": "The user is not verified.",
-                        "value": {"detail": ErrorCode.LOGIN_USER_NOT_VERIFIED},
+                        'summary': 'The user is not verified.',
+                        'value': {"detail": ErrorCode.LOGIN_USER_NOT_VERIFIED},
                     },
                 }
             }
@@ -65,9 +66,10 @@ login_responses: OpenAPIResponseType = {
 
 requires_verification = True
 
+
 @auth_router.post(
-    "/login",
-    name=f"auth:{AUTH_BACKEND_NAME}.login",
+    '/login',
+    name=f'auth:{AUTH_BACKEND_NAME}.login',
     responses=login_responses,
 )
 async def login(
@@ -115,6 +117,7 @@ async def login(
         await jwt_token_crud.create(create_jwt_token_schema, session)
     await user_manager.on_after_login(user, request, response)
     return response
+
 
 router.include_router(
     auth_router,
@@ -239,6 +242,7 @@ router.include_router(
     prefix=USER_PREFIX,
     tags=USER_TAGS
 )
+
 
 @service_router.post(
     '/check-telegram-id',
