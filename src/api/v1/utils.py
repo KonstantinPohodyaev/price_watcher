@@ -33,7 +33,6 @@ def get_wildberries_product_data(
     track_schema: Union[TrackDBCreate, TrackUpdate], product_data
 ) -> Union[TrackDBCreate, TrackUpdate]:
     """Заполняет поля объекта Track по полученном товару."""
-    print(product_data)
     try:
         track_schema.current_price = Decimal(str(
             int(

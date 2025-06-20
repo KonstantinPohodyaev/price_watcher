@@ -9,6 +9,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
+    env_file:
+      - .env
     container_name: api
     ports:
       - '8000:8000'
@@ -20,6 +22,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bot
+    env_file:
+      - .env
     container_name: telegram_bot
     depends_on:
       - db
