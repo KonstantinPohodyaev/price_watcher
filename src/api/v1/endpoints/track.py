@@ -16,6 +16,7 @@ from src.schemas.price_history import PriceHistoryCreate
 from src.schemas.track import (TrackDB, TrackDBCreate, TrackFilterSchema,
                                TrackUpdate, TrackUserDataCreate)
 
+
 COMPARE_RESPONSE_MODEL = dict(status=False)
 
 
@@ -109,7 +110,6 @@ async def create_track(
         create_track_schema = get_wildberries_product_data(
             track_db_create_schema, parsed_data
         )
-        
     # Добавить условие, если необходимо поддержка нескольких маркетплейсов.
     else:
         parsed_data = await wildberries_parse(
@@ -205,4 +205,3 @@ async def delete_track(
     return await track_crud.delete(
         await track_crud.get(track_id, session), session
     )
-

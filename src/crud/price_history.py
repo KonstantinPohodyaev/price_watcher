@@ -21,7 +21,7 @@ class PriceHistoryCRUD(
         track_id: int,
         session: AsyncSession
     ):
-        result =  await session.execute(
+        result = await session.execute(
             select(self.model).where(self.model.track_id == track_id)
         )
         return result.scalars().all()
@@ -37,7 +37,6 @@ class PriceHistoryCRUD(
                     select(self.model).order_by(asc(self.model.created_at))
                 )
             ).scalar()
-            print('Самая старая запись: ', the_oldest_price_history)
             await session.delete(the_oldest_price_history)
             if commit_on:
                 await session.commit()
@@ -50,8 +49,6 @@ class PriceHistoryCRUD(
                     error_message=str(error)
                 )
             )
-                
-       
 
 
 price_history_crud = PriceHistoryCRUD(PriceHistory)

@@ -2,7 +2,6 @@ import os
 
 from cryptography.fernet import Fernet
 from fastapi import HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +15,11 @@ fernet = Fernet(
         'A8zOVVp4FMb93RD03n0O25FwAYmTxmTQhF3kPBnLJ6E='
     )
 )
+
+DATA_TOKEN_CREATE_ERROR = 'Ошибка в данных токена при создании: {error}'
+TOKEN_SERVER_CREATE_ERROR = 'Ошибка сервера при создании токена: {error}'
+DATA_TOKEN_UPDATE_ERROR = 'Ошибка в данных токена при обновлении: {error}'
+TOKEN_SERVER_UPDATE_ERROR = 'Ошибка сервера при обновлении токена: {error}'
 
 
 class JWTCRUD:
@@ -46,13 +50,13 @@ class JWTCRUD:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Ошибка в данных токена'
+                detail=DATA_TOKEN_CREATE_ERROR.format(error=str(error))
             )
         except SQLAlchemyError as error:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Ошибка сервера при создании токена'
+                detail=TOKEN_SERVER_CREATE_ERROR.format(error=str(error))
             )
 
     async def update(
@@ -82,13 +86,13 @@ class JWTCRUD:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Ошибка в данных токена'
+                detail=DATA_TOKEN_UPDATE_ERROR.format(error=str(error))
             )
         except SQLAlchemyError as error:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Ошибка сервера при обновлении токена'
+                detail=TOKEN_SERVER_UPDATE_ERROR.format(error=str(error))
             )
 
     async def get_jwt_token_by_user_id(
