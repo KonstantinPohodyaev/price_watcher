@@ -1,0 +1,43 @@
+version: '3.9'
+
+volumes:
+  pg_data:
+  static:
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: api
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    volumes:
+      - static:/app/media
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: telegram_bot
+    depends_on:
+      - db
+      - api
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - '80:80'
+    depends_on:
+      - api
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'

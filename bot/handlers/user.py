@@ -675,6 +675,7 @@ async def save_avatar(
     if not await validate_empty_photo(update, context):
         return EDIT_SAVE_AVATAR
     photo = update.message.photo[-1]
+    await update.message.delete()
     file_id = photo.file_id
     tg_file = await context.bot.get_file(file_id)
     file_data = await tg_file.download_as_bytearray()
@@ -750,10 +751,10 @@ async def finish_edit(
                         telegram_id=new_user_data['telegram_id'],
                         email=new_user_data['email'],
                         jwt_token=new_user_data['jwt_token']['access_token']
-                    ),
-                    reply_markup=InlineKeyboardMarkup(
-                        FINISH_EDIT_BUTTONS
                     )
+                ),
+                reply_markup=InlineKeyboardMarkup(
+                    FINISH_EDIT_BUTTONS
                 )
             )
             return ConversationHandler.END

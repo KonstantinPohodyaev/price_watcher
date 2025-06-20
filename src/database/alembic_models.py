@@ -5,5 +5,5 @@ from src.models.user import User  # noqa
 from src.models.user_track import UserTrack  # noqa
 
 __all__ = [
-    'Base', 'User', 'Track', 'PriceHistory', 'UserTrack'
+    'Base', 'User', 'Track', 'PriceHistory', 'UserTrack', 'JWTToken'
 ]
