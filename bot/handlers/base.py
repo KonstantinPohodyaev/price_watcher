@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          CommandHandler, ContextTypes, MessageHandler,
+                          CommandHandler, ContextTypes,
                           filters)
 
 from bot.handlers.buttons import (MENU_BUTTONS, NOT_REGISTER_USER_BUTTONS,
@@ -9,7 +9,7 @@ from bot.handlers.buttons import (MENU_BUTTONS, NOT_REGISTER_USER_BUTTONS,
 from bot.handlers.callback_data import BOT_INFO, MENU, START_NOTIFICATIONS
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+from bot.handlers.utils import (catch_error,
                                 check_authorization, get_interaction,
                                 send_tracked_message)
 from bot.scheduler import (PERIODIC_CHECK_FIRST, PERIODIC_CHECK_INTERVAL,

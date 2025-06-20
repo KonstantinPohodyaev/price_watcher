@@ -16,7 +16,7 @@ from bot.handlers.callback_data import (ACCOUNT_SETTINGS, EDIT_ADD_AVATAR,
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+from bot.handlers.utils import (catch_error,
                                 check_authorization, check_password,
                                 get_headers, get_interaction,
                                 send_tracked_message, send_tracked_photo)

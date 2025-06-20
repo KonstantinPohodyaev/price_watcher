@@ -21,7 +21,7 @@ from bot.handlers.callback_data import (ADD_TRACK, CANCEL_DELETE,
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE
 from bot.handlers.pre_process import (clear_messages,
                                       load_data_for_register_user)
-from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+from bot.handlers.utils import (catch_error,
                                 check_authorization, get_headers,
                                 get_interaction, send_tracked_message)
 from bot.handlers.validators import validate_price
@@ -257,10 +257,11 @@ async def add_article(
     query = update.callback_query
     await query.answer()
     context.user_data['new_track']['marketplace'] = query.data.split('_')[-1]
-    message = await query.message.reply_text(
-        SELECT_ARTICLE_MESSAGE
+    await send_tracked_message(
+        query,
+        context,
+        text=SELECT_ARTICLE_MESSAGE
     )
-    add_message_to_delete_list(message, context)
     return ADD_TRACK_ADD_TARGET_PRICE
 
 
