@@ -25,7 +25,7 @@ from bot.handlers.validators import (validate_email, validate_empty_photo,
                                      PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
 from bot.handlers.buttons import (
     ACCOUNT_SETTINGS_BUTTONS, LOAD_ACCOUNT_DATA, CHECK_ACCOUNT_DATA_BUTTONS,
-    FINISH_REGISTRATION_BUTTONS
+    FINISH_REGISTRATION_BUTTONS, FINISH_AUTHORIZATION_BUTTONS
 )
 
 # Состояния для ConversationHandler
@@ -116,6 +116,45 @@ REGISTRATION_GREETING_TEMPLATE = (
     'Для продолжения нажмите кнопку ниже ⬇️'
 )
 
+ENTER_PASSWORD_MESSAGE = 'Введите пароль от вашего аккаунта:'
+
+NO_ACCOUNT_LOADED = """
+⚠️ Не удалось найти данные аккаунта.
+
+Попробуйте обновить командой: <code>/load_data</code>
+"""
+
+ASK_PASSWORD_AUTH = """
+🔑 Введите <b>ваш пароль</b> для авторизации:
+"""
+
+INVALID_PASSWORD = """
+❌ <b>Неверный пароль</b>. Попробуйте ещё раз:
+"""
+
+AUTH_SUCCESS = """
+✅ <b>Авторизация прошла успешно!</b>
+
+Выберите действие ниже 👇
+"""
+
+ASK_PASSWORD_FOR_DELETE = """
+🔐 <b>Введите пароль</b> от вашего аккаунта для подтверждения удаления:
+"""
+
+INVALID_PASSWORD_DELETE = """
+❌ <b>Неверный пароль</b>. Повторите попытку:
+"""
+
+DELETE_SUCCESS = """
+🗑️ <b>Ваш аккаунт был успешно удалён!</b>
+
+Вы всегда можете зарегистрироваться снова — /start
+"""
+
+NOT_AUTHORIZED_DELETE = """
+🚫 <b>Вы не авторизованы.</b> Пожалуйста, повторите попытку позже.
+"""
 
 REGISTRATION_ERROR = (
     'Возникла ошибка при регистрации пользователя! 🚫'
@@ -123,6 +162,11 @@ REGISTRATION_ERROR = (
 AUTHORIZATION_ERROR = (
     'Ошибка при получении JWT-токена. Повторите авторизацию! 🚫'
 )
+AUTHORIZATION_SAVE_TOKEN_ERROR = """
+🚫 <b>Ошибка при сохранении токена</b> в базу данных.
+
+Повторите попытку позже.
+"""
 DELETE_ACCOUNT_ERROR = 'Ошибка при удалении аккаунта! 🚫'
 SELECT_EDIT_FIELD_ERROR = 'Ошибка при выборе поля редактирования! 🚫'
 START_EDIT_ERROR = 'Ошибка при редактировании! 🚫'
@@ -317,16 +361,11 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_password_for_authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    if update.callback_query:
-        query = update.callback_query
-        await query.answer()
-        config = query
-    else:
-        config = update
-    message = await config.message.reply_text(
-        'Введите пароль от вашего аккаунта:'
+    await send_tracked_message(
+        await get_interaction(update),
+        context,
+        text=ASK_PASSWORD_AUTH
     )
-    add_message_to_delete_list(message, context)
     return AUTH_AUTHORIZATION
 
 
@@ -337,10 +376,11 @@ async def authorization(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if not context.user_data.get('account'):
-        message = await update.message.reply_text(
-            'Попробуйте обновить ваши данные! /load_data'
+        await send_tracked_message(
+            update,
+            context,
+            text=NO_ACCOUNT_LOADED
         )
-        add_message_to_delete_list(message, context)
         return ConversationHandler.END
     entered_password = update.message.text
     await update.message.delete()
@@ -373,21 +413,17 @@ async def authorization(
             )
         ) as response:
             if response.status == HTTPStatus.OK:
-                buttons = [
-                    [
-                        InlineKeyboardButton(
-                            'Меню 📦', callback_data=MENU
-                        )
-                    ]
-                ]
-                message = await update.message.reply_text(
-                    'Авторизация выполнена 🔐',
-                    reply_markup=InlineKeyboardMarkup(buttons)
+                await send_tracked_message(
+                    update,
+                    context,
+                    text=AUTH_SUCCESS,
+                    reply_markup=InlineKeyboardMarkup(
+                        FINISH_AUTHORIZATION_BUTTONS
+                    )
                 )
-                add_message_to_delete_list(message, context)
                 return ConversationHandler.END
             await update.message.reply_text(
-                    'Ошибка при сохранении нового токена в БД 🚫'
+                    AUTHORIZATION_SAVE_TOKEN_ERROR
                 )
             return ConversationHandler.END
         return ConversationHandler.END
@@ -397,10 +433,11 @@ async def authorization(
 async def get_password_for_delete_account(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    message = await update.message.reply_text(
-        '🔐 Введите пароль от вашего аккаунта:'
+    await send_tracked_message(
+        update,
+        context,
+        text=ASK_PASSWORD_FOR_DELETE
     )
-    add_message_to_delete_list(message, context)
     return DELETE_START_DELETE
 
 
@@ -418,22 +455,21 @@ async def delete_account(
             entered_password,
             context.user_data['account']['hashed_password']
         ):
-            return 'delete_account'
+            return DELETE_START_DELETE
         if not await check_authorization(update, context):
             return ConversationHandler.END
         async with session.delete(
             DELETE_USER_BY_ID.format(
-                id=context.user_data["account"]["id"]
+                id=context.user_data['account']['id']
             ),
             headers=get_headers(context)
         ):
             context.user_data.pop('account')
-            message = await update.message.reply_text(
-                'Ваш акккаунт удален!\n'
-                'Вы можете зарегестрироваться снова - /start',
-                reply_markup=ReplyKeyboardRemove()
+            await send_tracked_message(
+                update,
+                context,
+                text=DELETE_SUCCESS
             )
-            add_message_to_delete_list(message, context)
             return ConversationHandler.END
 
 
@@ -732,10 +768,6 @@ def handlers_installer(
             ),
             CommandHandler(
                 'auth', get_password_for_authorization
-            ),
-            MessageHandler(
-                filters.TEXT & filters.Regex('^Авторизация 🔐$'),
-                get_password_for_authorization
             )
         ],
         states={

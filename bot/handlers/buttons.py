@@ -25,6 +25,10 @@ MENU_BUTTON = InlineKeyboardButton(
 AUTHORIZATION_BUTTON = InlineKeyboardButton(
     '🔐 Авторизация', callback_data='authorization'
 )
+ACCOUNT_SETTINS_BUTTON = InlineKeyboardButton(
+    text='⚙️ Настройки аккаунта',
+    callback_data=ACCOUNT_SETTINGS
+)
 
 # handlers.base buttons
 MENU_BUTTONS = [
@@ -47,10 +51,7 @@ MENU_BUTTONS = [
         )
     ],
     [
-        InlineKeyboardButton(
-            text='⚙️ Настройки аккаунта',
-            callback_data=ACCOUNT_SETTINGS
-        )
+        ACCOUNT_SETTINS_BUTTON
     ],
     [
         InlineKeyboardButton(
@@ -62,10 +63,7 @@ MENU_BUTTONS = [
 REGISTER_USER_BUTTONS = [
     [
         MENU_BUTTON,
-        InlineKeyboardButton(
-            'Настройки аккаунта ⚙️',
-            callback_data=ACCOUNT_SETTINGS
-        )
+        ACCOUNT_SETTINS_BUTTON
     ]
 ]
 NOT_REGISTER_USER_BUTTONS = [
@@ -175,4 +173,8 @@ CHECK_ACCOUNT_DATA_BUTTONS = [
 ]
 FINISH_REGISTRATION_BUTTONS = [
     [AUTHORIZATION_BUTTON]
+]
+FINISH_AUTHORIZATION_BUTTONS = [
+    [MENU_BUTTON],
+    [ACCOUNT_SETTINS_BUTTON]
 ]
