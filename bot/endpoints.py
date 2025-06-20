@@ -1,5 +1,10 @@
-PROTOCOL = 'http'
-DOMEN = '127.0.0.1:8000'
+import os
+
+
+PROTOCOL = os.getenv('PROTOCOL', 'http')
+API_CONTAINER = os.getenv('API_CONTAINER', 'api')
+API_PORT = os.getenv('API_PORT', '8000')
+DOMEN = f'{API_CONTAINER}:{API_PORT}'
 
 
 # Эндпоинты User
