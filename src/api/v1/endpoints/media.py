@@ -2,18 +2,17 @@ import os
 import uuid
 
 import aiofiles
-from fastapi import APIRouter, status, UploadFile, Depends, Request
+from fastapi import APIRouter, Depends, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.schemas.media import MediaDB, MediaCreate
-from src.database.db import get_async_session
-from src.crud.user import user_crud
-from src.crud.media import media_crud
-from src.models.user import User
-from src.models.media import Media
-from src.core.user import current_user
 from src.core.config import UPLOAD_DIR
-
+from src.core.user import current_user
+from src.crud.media import media_crud
+from src.crud.user import user_crud
+from src.database.db import get_async_session
+from src.models.media import Media
+from src.models.user import User
+from src.schemas.media import MediaCreate, MediaDB
 
 router = APIRouter()
 

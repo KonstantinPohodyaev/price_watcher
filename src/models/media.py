@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
 from src.database.annotations import int_pk
+from src.models.base import Base
 
 if TYPE_CHECKING:
     from src.models.user import User

@@ -1,25 +1,32 @@
 from http import HTTPStatus
 
 import aiohttp
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardRemove, Update, InputFile)
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, InputFile,
+                      ReplyKeyboardRemove, Update)
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
                           CommandHandler, ContextTypes, ConversationHandler,
                           MessageHandler, filters)
 
-from bot.endpoints import (DELETE_USER_BY_ID, GET_JWT_TOKEN, REGISTER_USER,
-                           USERS_REFRESH_ME, ADD_NEW_AVATAR)
-from bot.handlers.callback_data import (EDIT_EMAIL_CALLBACK,
+from bot.endpoints import (ADD_NEW_AVATAR, DELETE_USER_BY_ID, GET_JWT_TOKEN,
+                           REGISTER_USER, USERS_REFRESH_ME)
+from bot.handlers.callback_data import (ACCOUNT_SETTINGS, EDIT_ADD_AVATAR,
+                                        EDIT_EMAIL_CALLBACK,
                                         EDIT_FULL_NAME_CALLBACK, EDIT_PASSWORD,
-                                        MENU, ACCOUNT_SETTINGS,
-                                        EDIT_ADD_AVATAR)
+                                        MENU)
 from bot.handlers.constants import MESSAGE_HANDLERS, PARSE_MODE, PHOTO_HANDLERS
-from bot.handlers.pre_process import load_data_for_register_user, clear_messages
-from bot.handlers.utils import (catch_error, check_authorization,
-                                check_password, get_headers, get_interaction,
-                                add_message_to_delete_list)
-from bot.handlers.validators import (validate_email, validate_full_name,
-                                     validate_password, validate_empty_photo)
+from bot.handlers.pre_process import (clear_messages,
+                                      load_data_for_register_user)
+from bot.handlers.utils import (add_message_to_delete_list, catch_error,
+                                check_authorization, check_password,
+                                get_headers, get_interaction,
+                                send_tracked_message, send_tracked_photo)
+from bot.handlers.validators import (validate_email, validate_empty_photo,
+                                     validate_full_name, validate_password,
+                                     PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
+from bot.handlers.buttons import (
+    ACCOUNT_SETTINGS_BUTTONS, LOAD_ACCOUNT_DATA, CHECK_ACCOUNT_DATA_BUTTONS,
+    FINISH_REGISTRATION_BUTTONS
+)
 
 # Состояния для ConversationHandler
 
@@ -81,6 +88,35 @@ USER_CARD = """
 🔐 <b>JWT:</b> <code>{jwt_token}</code>
 """
 
+LOAD_ACCOUNT_DATA_MESSAGE = 'Данные аккаунта успешно обновлены! ✅'
+
+ASK_FULL_NAME = (
+    '👤 Пожалуйста, введите <b>ваше имя и фамилию</b> через пробел:\n\n'
+    'Пример: <code>Иван Иванов</code>'
+)
+
+ASK_EMAIL = (
+    '📧 Введите <b>вашу электронную почту</b>:\n\n'
+    'Пример: <code>example@mail.ru</code>'
+)
+
+ASK_PASSWORD = (
+    '🔒 Придумайте <b>безопасный пароль</b>:\n\n'
+    '<i>От {min} до {max} символов, состоящий из цифр</i>'
+)
+
+REGISTRATION_SUCCESS = (
+    '✅ <b>Регистрация завершена!</b>\n\n'
+    'Давайте авторизуемся, чтобы начать пользоваться ботом 👇'
+)
+
+REGISTRATION_GREETING_TEMPLATE = (
+    '👋 Добро пожаловать, <b>{name}</b>!\n\n'
+    '🆔 Ваш уникальный ID: <code>{user_id}</code>\n\n'
+    'Для продолжения нажмите кнопку ниже ⬇️'
+)
+
+
 REGISTRATION_ERROR = (
     'Возникла ошибка при регистрации пользователя! 🚫'
 )
@@ -127,20 +163,12 @@ EDIT_BUTTONS = [
 async def account_settings(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    interaction = await get_interaction(update)
-    buttons = [
-        [
-            InlineKeyboardButton(
-                'Меню', callback_data='base_menu'
-            )
-        ]
-    ]
-    message = await interaction.message.reply_text(
+    await send_tracked_message(
+        await get_interaction(update),
+        context,
         text=ACCOUNT_SETTINGS_MESSAGE,
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode=PARSE_MODE
+        reply_markup=InlineKeyboardMarkup(ACCOUNT_SETTINGS_BUTTONS)
     )
-    add_message_to_delete_list(message, context)
 
 
 @clear_messages
@@ -149,16 +177,12 @@ async def load_account_data(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     await update.message.delete()
-    buttons = [
-        [
-            InlineKeyboardButton('Меню 📦', callback_data=MENU)
-        ]
-    ]
-    message = await update.message.reply_text(
-        'Данные аккаунта успешно обновлены! ✅',
-        reply_markup=InlineKeyboardMarkup(buttons)
+    await send_tracked_message(
+        update,
+        context,
+        text=LOAD_ACCOUNT_DATA_MESSAGE,
+        reply_markup=InlineKeyboardMarkup(LOAD_ACCOUNT_DATA)
     )
-    add_message_to_delete_list(message, context)
 
 
 @clear_messages
@@ -168,12 +192,6 @@ async def check_account_data(
 ):
     await update.message.delete()
     account = context.user_data['account']
-    buttons = [
-        [
-            InlineKeyboardButton('Меню 📦', callback_data=MENU),
-            InlineKeyboardButton('Назад ⬅️', callback_data=ACCOUNT_SETTINGS)
-        ]
-    ]
     user_data = ACCOUNT_DATA_MESSAGE.format(
         name=account['name'],
         surname=account['surname'],
@@ -188,23 +206,22 @@ async def check_account_data(
     if user_avatar := account.get('media'):
         try:
             with open(user_avatar[-1]['path'], 'rb') as image_file:
-                avatar_message = await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
-                    photo=InputFile(image_file),
+                await send_tracked_photo(
+                    update,
+                    context,
                     caption=user_data,
-                    parse_mode=PARSE_MODE,
-                    reply_markup=InlineKeyboardMarkup(buttons)
+                    photo=InputFile(image_file),
+                    reply_markup=InlineKeyboardMarkup(CHECK_ACCOUNT_DATA_BUTTONS)
                 )
-                add_message_to_delete_list(avatar_message, context)
         except Exception as error:
             print(f'Не удалось отправить аватар: {str(error)}')
     else:
-        message = await update.message.reply_text(
+        await send_tracked_message(
+            update,
+            context,
             text=user_data,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode=PARSE_MODE
+            reply_markup=InlineKeyboardMarkup(CHECK_ACCOUNT_DATA_BUTTONS)
         )
-        add_message_to_delete_list(message, context)
 
 
 @clear_messages
@@ -215,10 +232,11 @@ async def start_registration(
     query = update.callback_query
     await query.answer()
     context.user_data['account'] = dict()
-    message = await query.message.reply_text(
-        'Укажите Ваше имя и фамилию через пробел: '
+    await send_tracked_message(
+        query,
+        context,
+        text=ASK_FULL_NAME
     )
-    add_message_to_delete_list(message, context)
     return REGISTRATION_FULL_NAME
 
 
@@ -231,10 +249,11 @@ async def select_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name, surname = full_name.split()
     context.user_data['account']['name'] = name
     context.user_data['account']['surname'] = surname
-    message = await update.message.reply_text(
-        'Укажите Вашу почту: '
+    await send_tracked_message(
+        update,
+        context,
+        text=ASK_EMAIL
     )
-    add_message_to_delete_list(message, context)
     return REGISTRATION_EMAIL
 
 
@@ -245,10 +264,14 @@ async def select_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await validate_email(update, context, entered_email):
         return 'email'
     context.user_data['account']['email'] = entered_email
-    message = await update.message.reply_text(
-        'Придумайте пароль: '
+    await send_tracked_message(
+        update,
+        context,
+        text=ASK_PASSWORD.format(
+            min=PASSWORD_MIN_LENGTH,
+            max=PASSWORD_MAX_LENGTH
+        )
     )
-    add_message_to_delete_list(message, context)
     return REGISTRATION_PASSWORD
 
 
@@ -268,27 +291,22 @@ async def select_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ) as response:
             if response.status == HTTPStatus.CREATED:
                 user = await response.json()
-                message = await update.message.reply_text(
-                    'Регистрация закончена!'
+                await send_tracked_message(
+                    update,
+                    context,
+                    text=REGISTRATION_SUCCESS
                 )
-                add_message_to_delete_list(message, context)
-                buttons = [
-                    [
-                        InlineKeyboardButton(
-                            '🔐 Авторизация', callback_data='authorization'
-                        )
-                    ]
-                ]
-                message = await update.message.reply_text(
-                    text=(
-                    f'👋 Привет, <b>{user["name"]}</b>!\n\n'
-                    f'🆔 Твой уникальный ID: <code>{user["id"]}</code>\n\n'
-                    f'Чтобы продолжить, нажми кнопку ниже 👇'
-                ),
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=PARSE_MODE
+                await send_tracked_message(
+                    update,
+                    context,
+                    text=REGISTRATION_GREETING_TEMPLATE.format(
+                        name=user['name'],
+                        user_id=user['id']
+                    ),
+                    reply_markup=InlineKeyboardMarkup(
+                        FINISH_REGISTRATION_BUTTONS
+                    )
                 )
-                add_message_to_delete_list(message, context)
             else:
                 detail = await response.json()
                 await update.message.reply_text(detail)

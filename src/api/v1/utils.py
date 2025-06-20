@@ -10,7 +10,6 @@ from src.api.v1.constants import WILDBBERIES_PRODUCT_CARD_URL
 from src.api.v1.validators import check_not_existent_article
 from src.schemas.track import TrackDBCreate, TrackUpdate
 
-
 GET_WILDBERRIES_PRODUCT_DATA_ERROR = (
     'Ошибка при получении данных для товара {article}. '
     'Возможно товара нет в наличии!'

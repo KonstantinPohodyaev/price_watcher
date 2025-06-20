@@ -15,6 +15,8 @@ CONFIRM_TRACK_DELETE = 'confirm_track_delete'
 ADD_TRACK = 'track_add_track'
 WILDBERRIES = 'wildberries'
 OZON = 'ozon'
+CONFIRM_DELETE = 'confirm_delete'
+CANCEL_DELETE = 'cancel_delete'
 
 # модуль handlers.user
 START_REGISTRATION = 'start_registration'

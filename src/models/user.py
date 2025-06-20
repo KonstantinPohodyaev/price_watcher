@@ -8,8 +8,8 @@ from src.models.base import Base
 
 if TYPE_CHECKING:
     from src.models.jwt_auth import JWTToken
-    from src.models.track import Track
     from src.models.media import Media
+    from src.models.track import Track
 
 NAME_MAX_LENGTH = 128
 SURNAME_MAX_LENGTH = 128

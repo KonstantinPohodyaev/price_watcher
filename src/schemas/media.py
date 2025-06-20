@@ -2,7 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 MEDIA_BASE_TITLE = 'Базовая Pydantic-схема для модели Media.'
 MEDIA_DB_TITLE = 'Pydantic-схема для отображения объекта Media.'
 MEDIA_CREATE_TITLE = 'Pydantic-схема для создания объекта Media.'
