@@ -5,7 +5,10 @@ from bot.handlers.callback_data import (ACCOUNT_SETTINGS, ADD_TRACK, BOT_INFO,
                                         CONFIRM_DELETE, MENU, OZON,
                                         SHOW_ALL_TRACK, START_AUTHORIZATION,
                                         START_NOTIFICATIONS,
-                                        START_REGISTRATION, WILDBERRIES)
+                                        START_REGISTRATION, WILDBERRIES,
+                                        EDIT_ADD_AVATAR, EDIT_FULL_NAME_CALLBACK,
+                                        EDIT_EMAIL_CALLBACK, EDIT_PASSWORD,
+                                        FINISH_EDIT)
 
 MAIN_REPLY_BUTTONS = ['Меню 🔥', 'Авторизация 🔐', 'Ваш аккаунт 📱']
 
@@ -177,4 +180,35 @@ FINISH_REGISTRATION_BUTTONS = [
 FINISH_AUTHORIZATION_BUTTONS = [
     [MENU_BUTTON],
     [ACCOUNT_SETTINS_BUTTON]
+]
+EDIT_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Добавить фото', callback_data=EDIT_ADD_AVATAR
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            'Полное имя', callback_data=EDIT_FULL_NAME_CALLBACK
+        ),
+        InlineKeyboardButton(
+            'Почта', callback_data=EDIT_EMAIL_CALLBACK
+        ),
+        InlineKeyboardButton(
+            'Пароль', callback_data=EDIT_PASSWORD
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            'Применить ✅', callback_data=FINISH_EDIT
+        )
+    ]
+]
+FINISH_EDIT_BUTTONS = [
+    [
+        InlineKeyboardButton(
+            'Назад', callback_data=ACCOUNT_SETTINGS
+        )
+    ],
+    [MENU_BUTTON]
 ]
