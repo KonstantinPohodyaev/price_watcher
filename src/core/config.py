@@ -14,21 +14,28 @@ STATIC_DIR = '/media'
 
 
 class Settings(BaseSettings):
-    db_dialect: str = os.getenv('DB_DIALECT')
-    db_driver: str = os.getenv('DB_DRIVER')
-    db_name: str = os.getenv('DB_NAME')
-    secret: str = os.getenv('SECRET')
-    title: str = os.getenv('TITLE', DEFAULT_APP_TITLE)
-    description: str = os.getenv('DESCRIPTION', DEFAULT_APP_DESCRIPTION)
-    first_superuser_email: str = os.getenv('FIRST_SUPERUSER_EMAIL')
-    first_superuser_password: str = os.getenv('FIRST_SUPERUSER_PASSWORD')
+    db_dialect: str
+    db_driver: str
+    secret: str
+    title: str = DEFAULT_APP_TITLE
+    description: str = DEFAULT_APP_DESCRIPTION
+    first_superuser_email: str
+    first_superuser_password: str
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
+    postgres_port: str
+    postgres_host: str
 
     @property
     def database_url(self):
         return (
-            f'{self.db_dialect}+{self.db_driver}:'
-            f'///{self.db_name}'
+            f'{self.db_dialect}+{self.db_driver}://'
+            f'{self.postgres_user}:{self.postgres_password}@'
+            f'{self.postgres_host}:{self.postgres_port}'
+            f'/{self.postgres_db}'
         )
 
 
 settings = Settings()
+print(settings.database_url)

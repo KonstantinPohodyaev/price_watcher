@@ -35,7 +35,7 @@ class JWTCRUD:
     ):
         encoded_access_token = fernet.encrypt(
             create_schema.access_token.encode()
-        )
+        ).decode()
         create_schema.access_token = encoded_access_token
         new_encoded_jwt_token = JWTToken(
             **create_schema.model_dump()
@@ -71,7 +71,7 @@ class JWTCRUD:
         if update_data.get('access_token'):
             new_encoded_access_token = fernet.encrypt(
                 update_data.get('access_token').encode()
-            )
+            ).decode()
             update_data['access_token'] = new_encoded_access_token
         for field, value in update_data.items():
             if field in update_data:
