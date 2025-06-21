@@ -13,7 +13,7 @@ services:
       - .env
     container_name: api
     ports:
-      - '8000:8000'
+      - "8000:8000"
     depends_on:
       - db
     volumes:
@@ -34,7 +34,7 @@ services:
       dockerfile: Dockerfile
     container_name: nginx
     ports:
-      - '80:80'
+      - "80:80"
     depends_on:
       - api
   db:
@@ -44,4 +44,4 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "5432:5432"

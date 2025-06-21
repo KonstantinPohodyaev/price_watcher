@@ -5,6 +5,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY src ./src
+COPY src /app/src
+COPY alembic.ini /app
+COPY alembic /app/alembic
+COPY .env /app
+COPY start.sh /app/start.sh
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
