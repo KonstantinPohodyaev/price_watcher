@@ -1,3 +1,4 @@
+from decimal import Decimal
 from http import HTTPStatus
 
 import aiohttp
@@ -102,13 +103,17 @@ _________________________
 NEW_TARGET_PRICE_MESSAGE = """
 {track_card}
 _________________________
-'Укажите новую желаемую цену 🏷️'
+Укажите новую желаемую цену 🏷️
 """
 SUCCESS_SAVE_NEW_TARGET_PRICE_MESSAGE = (
     'Цена успешно обновлена на {new_target_price}! ✅'
 )
 EMPTY_TRACK_HISTORY_MESSAGE = 'История товара пуста('
-TRACK_HISTORY_MESSAGE = 'История товара {track_id}'
+TRACK_HISTORY_MESSAGE = """
+📊 История товара {track_id}
+_________________________
+{track_card}
+"""
 TRACK_HISTORY_NAVIGATION = 'Навигация 📋'
 CONFIRM_DELETE_MESSAGE = """
 {track_card}
@@ -150,7 +155,7 @@ async def show_all(
                 )
             true_track_count = false_track_count = 0
             for track in tracks:
-                if track['target_price'] >= track['current_price']:
+                if Decimal(track['target_price']) >= Decimal(track['current_price']):
                     true_track_count += 1
                 else:
                     false_track_count += 1
@@ -368,7 +373,8 @@ async def check_track_history(
                 query,
                 context,
                 text=TRACK_HISTORY_MESSAGE.format(
-                    track_id=track_id
+                    track_id=track_id,
+                    track_card=query.message.text
                 )
             )
             for write in writes:
@@ -385,7 +391,8 @@ async def check_track_history(
             await send_tracked_message(
                 query,
                 context,
-                text=TRACK_HISTORY_NAVIGATION
+                text=TRACK_HISTORY_NAVIGATION,
+                reply_markup=InlineKeyboardMarkup(CHECK_HISTORY_BUTTONS)
             )
 
 
