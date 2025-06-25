@@ -50,16 +50,19 @@ EDIT_FINISH_EDIT = 'finish_edit'
 
 ACCOUNT_SETTINGS_MESSAGE = """
 <b>⚙️ Настройки аккаунта</b>
-━━━━━━━━━━━━━━━━━━
+───────────────
 🔄 <b>/load_data</b> – обновить данные аккаунта
+
 ✏️ <b>/edit_account</b> – редактировать аккаунт
+
 🗑️ <b>/delete_account</b> – удалить аккаунт
+
 👤 <b>/account_data</b> – просмотреть данные аккаунта
 """
 
 ACCOUNT_DATA_MESSAGE = """
 <b>👤 Данные аккаунта</b>
-━━━━━━━━━━━━━━━━━━
+───────────────
 <b>Имя:</b> {name}
 <b>Фамилия:</b> {surname}
 <b>Почта:</b> {email}
@@ -666,7 +669,7 @@ async def save_edit_password(
     return EDIT_START_EDIT_FIELD
 
 
-@catch_error(SAVE_AVATAR_ERROR)
+@catch_error(SAVE_AVATAR_ERROR, conv=True)
 @clear_messages
 async def save_avatar(
     update: Update,
@@ -725,7 +728,7 @@ async def save_avatar(
     return EDIT_START_EDIT_FIELD
 
 
-@catch_error(EDIT_FINISH_ERROR)
+@catch_error(EDIT_FINISH_ERROR, conv=True)
 @clear_messages
 @load_data_for_register_user
 async def finish_edit(

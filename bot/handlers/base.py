@@ -28,9 +28,13 @@ INFO_MESSAGE = """
 🔐 Простая авторизация и управление аккаунтом
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 📌 Команды:
+
 /start — запустить бота
+
 /auth — авторизация
+
 /account_settings — настройки аккаунта
+
 /menu — главное меню
 """
 
@@ -96,6 +100,7 @@ async def info(
 async def menu(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
+    print(1, flush=True)
     await send_tracked_message(
         await get_interaction(update),
         context,

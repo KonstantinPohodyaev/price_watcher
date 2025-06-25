@@ -14,7 +14,8 @@ from bot.handlers.buttons import (CHECK_HISTORY_BUTTONS,
                                   FINISH_DELETE_TRACK_BUTTONS,
                                   GO_BACK_NEW_TARGET_PRICE_BUTTONS,
                                   SELECT_MARKETPLACE_BUTTONS, SHOW_ALL_BUTTONS,
-                                  get_create_track_buttons, get_track_keyboard)
+                                  get_create_track_buttons, get_track_keyboard,
+                                  GET_NEW_TARGET_PRICE_BUTTONS)
 from bot.handlers.callback_data import (ADD_TRACK, CANCEL_DELETE,
                                         CHECK_HISTORY, CONFIRM_DELETE,
                                         DELETE_TRACK, OZON,
