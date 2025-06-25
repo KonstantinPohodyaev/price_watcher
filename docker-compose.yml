@@ -28,6 +28,8 @@ services:
     depends_on:
       - db
       - api
+    volumes:
+      - static:/app/media
   nginx:
     build:
       context: ./nginx

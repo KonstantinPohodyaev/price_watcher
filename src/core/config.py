@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     postgres_port: str
     postgres_host: str
 
+
     @property
     def database_url(self):
         return (
